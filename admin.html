@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>RT Admin</title>
+<title>RT Admin Panel</title>
 
 <style>
   * { box-sizing: border-box; }
@@ -12,8 +12,8 @@
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
-    background: #111;
-    color: #fff;
+    background: #f4f6f8;
+    color: #222;
   }
 
   .wrap {
@@ -23,52 +23,95 @@
   }
 
   header {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 800;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
-  .card {
-    background: #1c1c1c;
-    border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 12px;
-  }
-
-  .row {
+  .topbar {
     display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
   }
 
   .btn {
-    padding: 10px 12px;
+    padding: 10px 14px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     font-weight: 700;
   }
 
-  .pending { background: orange; color: #000; }
-  .processing { background: dodgerblue; color: #fff; }
-  .done { background: limegreen; color: #000; }
-
   .reload {
-    background: #444;
-    color: white;
-    width: 100%;
-    margin-bottom: 12px;
+    background: #222;
+    color: #fff;
   }
 
-  .ticket-title {
-    font-weight: 700;
-    margin-bottom: 6px;
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 
-  .small {
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .title {
+    font-weight: 800;
+    font-size: 15px;
+  }
+
+  .sub {
     font-size: 12px;
-    color: #aaa;
+    color: #666;
+    margin-top: 6px;
+    line-height: 1.4;
   }
+
+  .status {
+    font-size: 12px;
+    font-weight: 800;
+    padding: 4px 8px;
+    border-radius: 8px;
+  }
+
+  .접수 { background: #ffe8a3; }
+  .처리중 { background: #bcdcff; }
+  .완료 { background: #c7f9cc; }
+  .고객사확인중 { background: #ffd6a5; }
+
+  .actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .act {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .a1 { background: #ffcc00; }
+  .a2 { background: #4dabf7; color: #fff; }
+  .a3 { background: #40c057; color: #fff; }
+  .a4 { background: #ffa94d; }
+  .del { background: #fa5252; color: #fff; }
 
 </style>
 </head>
@@ -77,11 +120,12 @@
 
 <div class="wrap">
 
-  <header>RT ADMIN PANEL</header>
+  <div class="topbar">
+    <header>RT ADMIN PANEL</header>
+    <button class="btn reload" onclick="loadTickets()">새로고침</button>
+  </div>
 
-  <button class="btn reload" onclick="loadTickets()">전체 새로고침</button>
-
-  <div id="list"></div>
+  <div id="list" class="list"></div>
 
 </div>
 
@@ -109,34 +153,50 @@ async function loadTickets() {
 
   data.reverse().forEach(t => {
 
+    const status = t.status || "접수";
+    const statusClass = status.replace(" ", "");
+
     box.innerHTML += `
       <div class="card">
 
-        <div class="ticket-title">
-          ${t.bulk_label || "-"} (${t.ticketId})
+        <div class="row">
+          <div class="title">${t.bulk_label || "-"}</div>
+          <div class="status ${statusClass}">
+            ${status}
+          </div>
         </div>
 
-        <div class="small">
-          카테고리: ${t.category || "-"} <br>
-          작업자: ${t.creator_id || "-"} <br>
-          상태: ${t.status || "접수"}
+        <div class="sub">
+          📌 ${t.category || "-"}<br>
+          👤 ${t.creator_id || "-"}<br>
+          🆔 ${t.ticketId || "-"}
         </div>
 
-        <div class="row" style="margin-top:10px;">
+        <div class="actions">
 
-          <button class="btn pending"
+          <button class="act a1"
             onclick="updateStatus('${t.ticketId}','접수')">
             접수
           </button>
 
-          <button class="btn processing"
+          <button class="act a2"
             onclick="updateStatus('${t.ticketId}','처리중')">
             처리중
           </button>
 
-          <button class="btn done"
+          <button class="act a4"
+            onclick="updateStatus('${t.ticketId}','고객사 확인 중')">
+            고객사 확인
+          </button>
+
+          <button class="act a3"
             onclick="updateStatus('${t.ticketId}','완료')">
             완료
+          </button>
+
+          <button class="act del"
+            onclick="deleteTicket('${t.ticketId}')">
+            삭제
           </button>
 
         </div>
@@ -155,6 +215,22 @@ async function updateStatus(ticketId, status) {
       action: "updateStatus",
       ticketId,
       status
+    })
+  });
+
+  loadTickets();
+}
+
+/* 삭제 */
+async function deleteTicket(ticketId) {
+
+  if (!confirm("진짜 삭제할까?")) return;
+
+  await fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "deleteTicket",
+      ticketId
     })
   });
 
