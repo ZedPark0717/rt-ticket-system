@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>RT Admin Panel</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    .controls {
+      margin-bottom: 15px;
+      display: flex;
+      gap: 10px;
+    }
+
+    select, button {
+      padding: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      font-size: 12px;
+    }
+
+    th {
+      background: #333;
+      color: white;
+    }
+
+    .status {
+      font-weight: bold;
+    }
+
+    .접수 { color: blue; }
+    .처리중 { color: orange; }
+    .고객사확인중 { color: purple; }
+    .완료 { color: green; }
+  </style>
+</head>
+
+<body>
+
+<h2>RT 관리자 패널</h2>
+
+<div class="controls">
+
+  <select id="categoryFilter">
+    <option value="">전체 카테고리</option>
+    <option>타매장</option>
+    <option>RCP 오류</option>
+    <option>RFID 오류</option>
+    <option>ART 오류</option>
+    <option>벌크라벨 훼손</option>
+    <option>기타</option>
+  </select>
+
+  <select id="statusFilter">
+    <option value="">전체 상태</option>
+    <option>접수</option>
+    <option>처리중</option>
+    <option>고객사 확인중</option>
+    <option>완료</option>
+  </select>
+
+  <button onclick="loadTickets()">새로고침</button>
+
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>시간</th>
+      <th>카테고리</th>
+      <th>SKU</th>
+      <th>작업자</th>
+      <th>상태</th>
+      <th>변경</th>
+    </tr>
+  </thead>
+
+  <tbody id="tableBody"></tbody>
+</table>
+
+<script>
+
+const API = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
+
+let allData = [];
+
+async function loadTickets() {
+
+  const res = await fetch(API + "?type=list");
+  allData = await res.json();
+
+  render();
+}
+
+function render() {
+
+  const categoryFilter = document.getElementById("categoryFilter").value;
+  const statusFilter = document.getElementById("statusFilter").value;
+
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+
+  let filtered = allData;
+
+  if (categoryFilter) {
+    filtered = filtered.filter(t => t.category === categoryFilter);
+  }
+
+  if (statusFilter) {
+    filtered = filtered.filter(t => t.status === statusFilter);
+  }
+
+  filtered.reverse().forEach(t => {
+
+    const row = `
+      <tr>
+        <td>${t.ticketId}</td>
+        <td>${t.date}</td>
+        <td>${t.category}</td>
+        <td>${t.sku}</td>
+        <td>${t.creator_id}</td>
+        <td class="status ${t.status}">${t.status}</td>
+        <td>
+          <select onchange="updateStatus('${t.ticketId}', this.value)">
+            <option ${t.status==="접수"?"selected":""}>접수</option>
+            <option ${t.status==="처리중"?"selected":""}>처리중</option>
+            <option ${t.status==="고객사 확인중"?"selected":""}>고객사 확인중</option>
+            <option ${t.status==="완료"?"selected":""}>완료</option>
+          </select>
+        </td>
+      </tr>
+    `;
+
+    tbody.innerHTML += row;
+  });
+}
+
+async function updateStatus(ticketId, status) {
+
+  await fetch(API, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "updateStatus",
+      ticketId,
+      status
+    })
+  });
+
+  loadTickets();
+}
+
+document.getElementById("categoryFilter").onchange = render;
+document.getElementById("statusFilter").onchange = render;
+
+loadTickets();
+
+</script>
+
+</body>
+</html>
