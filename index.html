@@ -31,6 +31,28 @@
     padding: 16px 0;
   }
 
+  /* 탭 */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .tabs button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #eee;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .tabs button.active {
+    background: #ff4d4f;
+    color: white;
+  }
+
   .card {
     background: #fff;
     border-radius: 14px;
@@ -51,19 +73,14 @@
     font-size: 12px;
     color: #888;
     margin-bottom: 8px;
-    line-height: 1.4;
   }
 
   input, select, textarea {
     width: 100%;
-    max-width: 100%;
-    display: block;
-
     padding: 14px;
     border: 1px solid #ddd;
     border-radius: 10px;
     font-size: 15px;
-    outline: none;
   }
 
   textarea {
@@ -83,8 +100,8 @@
     margin-top: 10px;
   }
 
-  .btn:active {
-    transform: scale(0.98);
+  .btn.gray {
+    background: #333;
   }
 
   /* modal */
@@ -111,20 +128,14 @@
   .modal button {
     width: 48%;
     padding: 12px;
-    margin-top: 12px;
     border: none;
     border-radius: 10px;
     font-weight: 600;
   }
 
-  .yes {
-    background: #ff4d4f;
-    color: white;
-  }
+  .yes { background:#ff4d4f; color:white; }
+  .no { background:#eee; }
 
-  .no {
-    background: #eee;
-  }
 </style>
 </head>
 
@@ -134,81 +145,77 @@
 
   <header>RT Ticket System</header>
 
-  <form id="ticketForm">
+  <!-- 탭 -->
+  <div class="tabs">
+    <button id="tab1" class="active" onclick="showTab('submit')">티켓 제출</button>
+    <button id="tab2" onclick="showTab('my')">내 티켓</button>
+  </div>
 
-    <!-- 카테고리 -->
-    <div class="card">
-      <label>문제 카테고리</label>
-      <select id="category">
-        <option value="">선택 안함</option>
-        <option>타매장</option>
-        <option>RCP 오류</option>
-        <option>RFID 오류</option>
-        <option>ART 오류</option>
-        <option>벌크라벨 훼손</option>
-        <option>기타</option>
-      </select>
-    </div>
+  <!-- ========== 제출 화면 ========== -->
+  <div id="view_submit">
 
-    <!-- 벌크라벨 -->
-    <div class="card">
-      <label>벌크라벨</label>
-      <div class="desc">
-        해당 칸에 벌크라벨을 스캔해주세요. <br>
-        없으면 <b>X</b>로 입력해주세요.
+    <form id="ticketForm">
+
+      <div class="card">
+        <label>문제 카테고리</label>
+        <select id="category">
+          <option value="">선택 안함</option>
+          <option>타매장</option>
+          <option>RCP 오류</option>
+          <option>RFID 오류</option>
+          <option>ART 오류</option>
+          <option>벌크라벨 훼손</option>
+          <option>기타</option>
+        </select>
       </div>
-      <input type="text" id="bulk_label" placeholder="스캔 또는 X 입력">
-    </div>
 
-    <!-- SKU -->
-    <div class="card">
-      <label>SKU</label>
-      <div class="desc">
-        SKU 스캔 우선 / 불가 시 수기 입력
+      <div class="card">
+        <label>벌크라벨</label>
+        <div class="desc">해당 칸에 벌크라벨을 스캔해주세요. 없으면 X</div>
+        <input type="text" id="bulk_label" placeholder="스캔 또는 X 입력">
       </div>
-      <textarea id="sku" rows="3" placeholder="SKU 입력"></textarea>
-    </div>
 
-    <!-- 작업자 -->
+      <div class="card">
+        <label>SKU</label>
+        <div class="desc">SKU 스캔 우선 / 수기 입력 가능</div>
+        <textarea id="sku" rows="3"></textarea>
+      </div>
+
+      <div class="card">
+        <label>작업자 ID</label>
+        <input type="text" id="creator_id" placeholder="KRA0011">
+      </div>
+
+      <div class="card">
+        <label>코멘트</label>
+        <textarea id="comment" rows="3"></textarea>
+      </div>
+
+      <button type="button" class="btn" onclick="openModal()">티켓 제출</button>
+
+    </form>
+  </div>
+
+  <!-- ========== 내 티켓 화면 ========== -->
+  <div id="view_my" style="display:none;">
+
     <div class="card">
       <label>작업자 ID</label>
-      <input type="text" id="creator_id" placeholder="예: KRA0011">
+      <input type="text" id="search_id" placeholder="예: KRA0011">
+      <button class="btn gray" onclick="loadMyTickets()">조회</button>
     </div>
 
-    <!-- 코멘트 -->
-    <div class="card">
-      <label>코멘트</label>
-      <textarea id="comment" rows="3" placeholder="추가 내용 (선택)"></textarea>
-    </div>
+    <div id="myTickets"></div>
 
-    <!-- 주의사항 -->
-    <div class="card">
-      <label>⚠️ 작업 주의사항</label>
-      <div class="desc" style="color:#666;">
-        • 불명확한 정보는 X로 통일<br>
-        • 벌크라벨 오입력 시 처리 지연 발생<br>
-        • SKU는 반드시 스캔 우선<br>
-        • 코멘트는 필요 시에만 작성<br>
-        • 입력 후 반드시 확인 후 제출
-      </div>
-    </div>
+  </div>
 
-    <button class="btn" type="button" onclick="openModal()">
-      티켓 제출
-    </button>
-
-  </form>
 </div>
 
-<!-- confirm modal -->
+<!-- modal -->
 <div class="modal-bg" id="modal">
   <div class="modal">
     <h3>티켓을 전송할까요?</h3>
-    <p style="font-size:13px;color:#666;">
-      입력된 내용으로 바로 전송됩니다.
-    </p>
-
-    <div style="display:flex;gap:10px;">
+    <div style="display:flex;gap:10px;margin-top:10px;">
       <button class="no" onclick="closeModal()">취소</button>
       <button class="yes" onclick="submitTicket()">전송</button>
     </div>
@@ -219,6 +226,27 @@
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
 
+/* 탭 전환 */
+function showTab(tab) {
+
+  const submit = document.getElementById("view_submit");
+  const my = document.getElementById("view_my");
+
+  document.getElementById("tab1").classList.remove("active");
+  document.getElementById("tab2").classList.remove("active");
+
+  if (tab === "submit") {
+    submit.style.display = "block";
+    my.style.display = "none";
+    document.getElementById("tab1").classList.add("active");
+  } else {
+    submit.style.display = "none";
+    my.style.display = "block";
+    document.getElementById("tab2").classList.add("active");
+  }
+}
+
+/* 제출 */
 function openModal() {
   document.getElementById("modal").style.display = "flex";
 }
@@ -244,8 +272,58 @@ async function submitTicket() {
   });
 
   closeModal();
-  alert("티켓이 접수되었습니다.");
+  alert("티켓 접수 완료");
   document.getElementById("ticketForm").reset();
+}
+
+/* 내 티켓 */
+async function loadMyTickets() {
+
+  const id = document.getElementById("search_id").value;
+
+  const res = await fetch(SCRIPT_URL + "?mode=read");
+  const data = await res.json();
+
+  const filtered = data.filter(t => t.creator_id === id);
+
+  const box = document.getElementById("myTickets");
+  box.innerHTML = "";
+
+  filtered.forEach(t => {
+
+    const color =
+      t.status === "done" ? "green" :
+      t.status === "processing" ? "blue" : "orange";
+
+    box.innerHTML += `
+      <div class="card">
+        <b>${t.bulk_label}</b><br>
+        상태: <span style="color:${color};font-weight:700;">
+          ${t.status || "pending"}
+        </span><br>
+        카테고리: ${t.category}<br>
+
+        <button class="btn gray" onclick="sendRemind('${t.bulk_label}')">
+          리마인드
+        </button>
+      </div>
+    `;
+  });
+}
+
+/* 리마인드 */
+async function sendRemind(id) {
+
+  await fetch(SCRIPT_URL, {
+    method: "POST",
+    mode: "no-cors",
+    body: JSON.stringify({
+      type: "remind",
+      bulk_label: id
+    })
+  });
+
+  alert("리마인드 전송됨");
 }
 
 </script>
