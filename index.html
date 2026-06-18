@@ -1,78 +1,204 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RT Ticket System</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 20px auto;
-      padding: 20px;
-    }
+<title>RT Ticket System</title>
 
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: bold;
-    }
+<style>
+  /* 🔥 핵심: 레이아웃 깨짐 방지 */
+  * {
+    box-sizing: border-box;
+  }
 
-    input, select, textarea, button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 5px;
-      box-sizing: border-box;
-    }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+    background: #f4f6f8;
+    color: #222;
+  }
 
-    button {
-      margin-top: 20px;
-      cursor: pointer;
-    }
-  </style>
+  .wrap {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+
+  header {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    padding: 16px 0;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #555;
+  }
+
+  /* 🔥 핵심: input 안정화 */
+  input, select, textarea {
+    width: 100%;
+    max-width: 100%;
+    display: block;
+
+    padding: 14px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-size: 15px;
+    outline: none;
+  }
+
+  textarea {
+    resize: none;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    background: #ff4d4f;
+    color: white;
+    margin-top: 10px;
+  }
+
+  .btn:active {
+    transform: scale(0.98);
+  }
+
+  /* modal */
+  .modal-bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal {
+    background: white;
+    width: 85%;
+    max-width: 360px;
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .modal button {
+    width: 48%;
+    padding: 12px;
+    margin-top: 12px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  .yes {
+    background: #ff4d4f;
+    color: white;
+  }
+
+  .no {
+    background: #eee;
+  }
+</style>
 </head>
 
 <body>
 
-<h2>RT Ticket System</h2>
+<div class="wrap">
 
-<form id="ticketForm">
+  <header>RT Ticket System</header>
 
-  <label>문제 카테고리</label>
-  <select id="category" required>
-    <option value="">선택</option>
-    <option>타매장</option>
-    <option>RCP 오류</option>
-    <option>RFID 오류</option>
-    <option>ART 오류</option>
-    <option>벌크라벨 훼손</option>
-    <option>기타</option>
-  </select>
+  <form id="ticketForm">
 
-  <label>벌크라벨</label>
-  <input type="text" id="bulk_label" required>
+    <div class="card">
+      <label>문제 카테고리</label>
+      <select id="category">
+        <option value="">선택 안함</option>
+        <option>타매장</option>
+        <option>RCP 오류</option>
+        <option>RFID 오류</option>
+        <option>ART 오류</option>
+        <option>벌크라벨 훼손</option>
+        <option>기타</option>
+      </select>
+    </div>
 
-  <label>SKU</label>
-  <textarea id="sku" rows="4" required></textarea>
+    <div class="card">
+      <label>벌크라벨</label>
+      <input type="text" id="bulk_label" placeholder="예: KRA0011-03">
+    </div>
 
-  <label>작업자 ID</label>
-  <input type="text" id="creator_id" required>
+    <div class="card">
+      <label>SKU</label>
+      <textarea id="sku" rows="3" placeholder="SKU 입력"></textarea>
+    </div>
 
-  <label>코멘트</label>
-  <textarea id="comment"></textarea>
+    <div class="card">
+      <label>작업자 ID</label>
+      <input type="text" id="creator_id" placeholder="예: KRA0011">
+    </div>
 
-  <button type="submit">제출</button>
+    <div class="card">
+      <label>코멘트</label>
+      <textarea id="comment" rows="3" placeholder="추가 내용 (선택)"></textarea>
+    </div>
 
-</form>
+    <button class="btn" type="button" onclick="openModal()">
+      티켓 제출
+    </button>
+
+  </form>
+</div>
+
+<!-- confirm modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3>티켓을 전송할까요?</h3>
+    <p style="font-size:13px;color:#666;">
+      입력된 내용으로 바로 전송됩니다.
+    </p>
+
+    <div style="display:flex;gap:10px;">
+      <button class="no" onclick="closeModal()">취소</button>
+      <button class="yes" onclick="submitTicket()">전송</button>
+    </div>
+  </div>
+</div>
 
 <script>
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
 
-document.getElementById("ticketForm").addEventListener("submit", async (e) => {
+function openModal() {
+  document.getElementById("modal").style.display = "flex";
+}
 
-  e.preventDefault();
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+}
+
+async function submitTicket() {
 
   const payload = {
     category: document.getElementById("category").value,
@@ -88,11 +214,12 @@ document.getElementById("ticketForm").addEventListener("submit", async (e) => {
     body: JSON.stringify(payload)
   });
 
+  closeModal();
+
   alert("티켓이 접수되었습니다.");
 
   document.getElementById("ticketForm").reset();
-
-});
+}
 
 </script>
 
