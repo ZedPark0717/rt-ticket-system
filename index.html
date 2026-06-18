@@ -7,9 +7,7 @@
 <title>RT Ticket System</title>
 
 <style>
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
 
   body {
     margin: 0;
@@ -31,7 +29,6 @@
     padding: 16px 0;
   }
 
-  /* 탭 */
   .tabs {
     display: flex;
     gap: 8px;
@@ -83,9 +80,7 @@
     font-size: 15px;
   }
 
-  textarea {
-    resize: none;
-  }
+  textarea { resize: none; }
 
   .btn {
     width: 100%;
@@ -100,11 +95,8 @@
     margin-top: 10px;
   }
 
-  .btn.gray {
-    background: #333;
-  }
+  .btn.gray { background: #333; }
 
-  /* modal */
   .modal-bg {
     position: fixed;
     top: 0; left: 0;
@@ -145,13 +137,12 @@
 
   <header>RT Ticket System</header>
 
-  <!-- 탭 -->
   <div class="tabs">
     <button id="tab1" class="active" onclick="showTab('submit')">티켓 제출</button>
     <button id="tab2" onclick="showTab('my')">내 티켓</button>
   </div>
 
-  <!-- ========== 제출 화면 ========== -->
+  <!-- 제출 -->
   <div id="view_submit">
 
     <form id="ticketForm">
@@ -171,19 +162,19 @@
 
       <div class="card">
         <label>벌크라벨</label>
-        <div class="desc">해당 칸에 벌크라벨을 스캔해주세요. 없으면 X</div>
-        <input type="text" id="bulk_label" placeholder="스캔 또는 X 입력">
+        <div class="desc">스캔 / 없으면 X</div>
+        <input type="text" id="bulk_label">
       </div>
 
       <div class="card">
         <label>SKU</label>
-        <div class="desc">SKU 스캔 우선 / 수기 입력 가능</div>
+        <div class="desc">스캔 우선 / 수기 가능</div>
         <textarea id="sku" rows="3"></textarea>
       </div>
 
       <div class="card">
         <label>작업자 ID</label>
-        <input type="text" id="creator_id" placeholder="KRA0011">
+        <input type="text" id="creator_id">
       </div>
 
       <div class="card">
@@ -196,14 +187,10 @@
     </form>
   </div>
 
-  <!-- ========== 내 티켓 화면 ========== -->
+  <!-- 내 티켓 -->
   <div id="view_my" style="display:none;">
 
-    <div class="card">
-      <label>작업자 ID</label>
-      <input type="text" id="search_id" placeholder="예: KRA0011">
-      <button class="btn gray" onclick="loadMyTickets()">조회</button>
-    </div>
+    <button class="btn gray" onclick="loadMyTickets()">전체 티켓 불러오기</button>
 
     <div id="myTickets"></div>
 
@@ -214,7 +201,7 @@
 <!-- modal -->
 <div class="modal-bg" id="modal">
   <div class="modal">
-    <h3>티켓을 전송할까요?</h3>
+    <h3>전송하시겠습니까?</h3>
     <div style="display:flex;gap:10px;margin-top:10px;">
       <button class="no" onclick="closeModal()">취소</button>
       <button class="yes" onclick="submitTicket()">전송</button>
@@ -226,22 +213,22 @@
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
 
-/* 탭 전환 */
+/* 탭 */
 function showTab(tab) {
 
-  const submit = document.getElementById("view_submit");
-  const my = document.getElementById("view_my");
+  const s = document.getElementById("view_submit");
+  const m = document.getElementById("view_my");
 
   document.getElementById("tab1").classList.remove("active");
   document.getElementById("tab2").classList.remove("active");
 
   if (tab === "submit") {
-    submit.style.display = "block";
-    my.style.display = "none";
+    s.style.display = "block";
+    m.style.display = "none";
     document.getElementById("tab1").classList.add("active");
   } else {
-    submit.style.display = "none";
-    my.style.display = "block";
+    s.style.display = "none";
+    m.style.display = "block";
     document.getElementById("tab2").classList.add("active");
   }
 }
@@ -258,11 +245,11 @@ function closeModal() {
 async function submitTicket() {
 
   const payload = {
-    category: document.getElementById("category").value,
-    bulk_label: document.getElementById("bulk_label").value,
-    sku: document.getElementById("sku").value,
-    creator_id: document.getElementById("creator_id").value,
-    comment: document.getElementById("comment").value
+    category: category.value,
+    bulk_label: bulk_label.value,
+    sku: sku.value,
+    creator_id: creator_id.value,
+    comment: comment.value
   };
 
   await fetch(SCRIPT_URL, {
@@ -272,43 +259,56 @@ async function submitTicket() {
   });
 
   closeModal();
-  alert("티켓 접수 완료");
-  document.getElementById("ticketForm").reset();
+  alert("접수 완료");
+  ticketForm.reset();
 }
 
-/* 내 티켓 */
+/* 내 티켓 (전체 보기) */
 async function loadMyTickets() {
 
-  const id = document.getElementById("search_id").value;
-
-  const res = await fetch(SCRIPT_URL + "?mode=read");
-  const data = await res.json();
-
-  const filtered = data.filter(t => t.creator_id === id);
-
   const box = document.getElementById("myTickets");
-  box.innerHTML = "";
+  box.innerHTML = "로딩중...";
 
-  filtered.forEach(t => {
+  try {
 
-    const color =
-      t.status === "done" ? "green" :
-      t.status === "processing" ? "blue" : "orange";
+    const res = await fetch(SCRIPT_URL + "?mode=read");
+    const text = await res.text();
 
-    box.innerHTML += `
-      <div class="card">
-        <b>${t.bulk_label}</b><br>
-        상태: <span style="color:${color};font-weight:700;">
-          ${t.status || "pending"}
-        </span><br>
-        카테고리: ${t.category}<br>
+    const data = JSON.parse(text || "[]");
 
-        <button class="btn gray" onclick="sendRemind('${t.bulk_label}')">
-          리마인드
-        </button>
-      </div>
-    `;
-  });
+    if (!Array.isArray(data) || data.length === 0) {
+      box.innerHTML = "<div class='card'>티켓 없음</div>";
+      return;
+    }
+
+    box.innerHTML = "";
+
+    data.reverse().forEach(t => {
+
+      const status = t.status || "pending";
+
+      const color =
+        status === "done" ? "green" :
+        status === "processing" ? "blue" :
+        "orange";
+
+      box.innerHTML += `
+        <div class="card">
+          <b>${t.bulk_label || "-"}</b><br>
+          상태: <span style="color:${color};font-weight:700;">${status}</span><br>
+          카테고리: ${t.category || "-"}<br>
+          작업자: ${t.creator_id || "-"}<br>
+
+          <button class="btn gray" onclick="sendRemind('${t.bulk_label}')">
+            리마인드
+          </button>
+        </div>
+      `;
+    });
+
+  } catch (e) {
+    box.innerHTML = "<div class='card'>불러오기 실패</div>";
+  }
 }
 
 /* 리마인드 */
@@ -323,7 +323,7 @@ async function sendRemind(id) {
     })
   });
 
-  alert("리마인드 전송됨");
+  alert("리마인드 전송");
 }
 
 </script>
