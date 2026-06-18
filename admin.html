@@ -1,162 +1,155 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>RT Admin Panel</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      font-family: Arial;
-      padding: 20px;
-      background: #f5f5f5;
-    }
+<title>RT Admin</title>
 
-    h2 {
-      margin-bottom: 10px;
-    }
+<style>
+  * { box-sizing: border-box; }
 
-    .controls {
-      margin-bottom: 15px;
-      display: flex;
-      gap: 10px;
-    }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+    background: #111;
+    color: #fff;
+  }
 
-    select, button {
-      padding: 8px;
-    }
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 16px;
+  }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-    }
+  header {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 16px;
+  }
 
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      font-size: 12px;
-    }
+  .card {
+    background: #1c1c1c;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
 
-    th {
-      background: #333;
-      color: white;
-    }
+  .row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
 
-    .status {
-      font-weight: bold;
-    }
+  .btn {
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+  }
 
-    .접수 { color: blue; }
-    .처리중 { color: orange; }
-    .고객사확인중 { color: purple; }
-    .완료 { color: green; }
-  </style>
+  .pending { background: orange; color: #000; }
+  .processing { background: dodgerblue; color: #fff; }
+  .done { background: limegreen; color: #000; }
+
+  .reload {
+    background: #444;
+    color: white;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
+  .ticket-title {
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .small {
+    font-size: 12px;
+    color: #aaa;
+  }
+
+</style>
 </head>
 
 <body>
 
-<h2>RT 관리자 패널</h2>
+<div class="wrap">
 
-<div class="controls">
+  <header>RT ADMIN PANEL</header>
 
-  <select id="categoryFilter">
-    <option value="">전체 카테고리</option>
-    <option>타매장</option>
-    <option>RCP 오류</option>
-    <option>RFID 오류</option>
-    <option>ART 오류</option>
-    <option>벌크라벨 훼손</option>
-    <option>기타</option>
-  </select>
+  <button class="btn reload" onclick="loadTickets()">전체 새로고침</button>
 
-  <select id="statusFilter">
-    <option value="">전체 상태</option>
-    <option>접수</option>
-    <option>처리중</option>
-    <option>고객사 확인중</option>
-    <option>완료</option>
-  </select>
-
-  <button onclick="loadTickets()">새로고침</button>
+  <div id="list"></div>
 
 </div>
 
-<table>
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>시간</th>
-      <th>카테고리</th>
-      <th>SKU</th>
-      <th>작업자</th>
-      <th>상태</th>
-      <th>변경</th>
-    </tr>
-  </thead>
-
-  <tbody id="tableBody"></tbody>
-</table>
-
 <script>
 
-const API = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
-
-let allData = [];
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
 
 async function loadTickets() {
 
-  const res = await fetch(API + "?type=list");
-  allData = await res.json();
+  const res = await fetch(SCRIPT_URL + "?type=list");
+  const text = await res.text();
 
-  render();
-}
+  let data = [];
 
-function render() {
-
-  const categoryFilter = document.getElementById("categoryFilter").value;
-  const statusFilter = document.getElementById("statusFilter").value;
-
-  const tbody = document.getElementById("tableBody");
-  tbody.innerHTML = "";
-
-  let filtered = allData;
-
-  if (categoryFilter) {
-    filtered = filtered.filter(t => t.category === categoryFilter);
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    document.getElementById("list").innerHTML =
+      "<div class='card'>데이터 오류</div>";
+    return;
   }
 
-  if (statusFilter) {
-    filtered = filtered.filter(t => t.status === statusFilter);
-  }
+  const box = document.getElementById("list");
+  box.innerHTML = "";
 
-  filtered.reverse().forEach(t => {
+  data.reverse().forEach(t => {
 
-    const row = `
-      <tr>
-        <td>${t.ticketId}</td>
-        <td>${t.date}</td>
-        <td>${t.category}</td>
-        <td>${t.sku}</td>
-        <td>${t.creator_id}</td>
-        <td class="status ${t.status}">${t.status}</td>
-        <td>
-          <select onchange="updateStatus('${t.ticketId}', this.value)">
-            <option ${t.status==="접수"?"selected":""}>접수</option>
-            <option ${t.status==="처리중"?"selected":""}>처리중</option>
-            <option ${t.status==="고객사 확인중"?"selected":""}>고객사 확인중</option>
-            <option ${t.status==="완료"?"selected":""}>완료</option>
-          </select>
-        </td>
-      </tr>
+    box.innerHTML += `
+      <div class="card">
+
+        <div class="ticket-title">
+          ${t.bulk_label || "-"} (${t.ticketId})
+        </div>
+
+        <div class="small">
+          카테고리: ${t.category || "-"} <br>
+          작업자: ${t.creator_id || "-"} <br>
+          상태: ${t.status || "접수"}
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+
+          <button class="btn pending"
+            onclick="updateStatus('${t.ticketId}','접수')">
+            접수
+          </button>
+
+          <button class="btn processing"
+            onclick="updateStatus('${t.ticketId}','처리중')">
+            처리중
+          </button>
+
+          <button class="btn done"
+            onclick="updateStatus('${t.ticketId}','완료')">
+            완료
+          </button>
+
+        </div>
+
+      </div>
     `;
-
-    tbody.innerHTML += row;
   });
 }
 
+/* 상태 변경 */
 async function updateStatus(ticketId, status) {
 
-  await fetch(API, {
+  await fetch(SCRIPT_URL, {
     method: "POST",
     body: JSON.stringify({
       action: "updateStatus",
@@ -167,9 +160,6 @@ async function updateStatus(ticketId, status) {
 
   loadTickets();
 }
-
-document.getElementById("categoryFilter").onchange = render;
-document.getElementById("statusFilter").onchange = render;
 
 loadTickets();
 
