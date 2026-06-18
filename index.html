@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RT Ticket System</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input, select, textarea, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 5px;
+      box-sizing: border-box;
+    }
+
+    button {
+      margin-top: 20px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>RT Ticket System</h2>
+
+<form id="ticketForm">
+
+  <label>문제 카테고리</label>
+  <select id="category" required>
+    <option value="">선택</option>
+    <option>타매장</option>
+    <option>RCP 오류</option>
+    <option>RFID 오류</option>
+    <option>ART 오류</option>
+    <option>벌크라벨 훼손</option>
+    <option>기타</option>
+  </select>
+
+  <label>벌크라벨</label>
+  <input type="text" id="bulk_label" required>
+
+  <label>SKU</label>
+  <input type="text" id="sku" required>
+
+  <label>작업자 ID</label>
+  <input type="text" id="creator_id" required>
+
+  <label>코멘트</label>
+  <textarea id="comment"></textarea>
+
+  <button type="submit">제출</button>
+
+</form>
+
+<script>
+
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
+
+document.getElementById("ticketForm").addEventListener("submit", async (e) => {
+
+  e.preventDefault();
+
+  const payload = {
+    category: document.getElementById("category").value,
+    bulk_label: document.getElementById("bulk_label").value,
+    sku: document.getElementById("sku").value,
+    creator_id: document.getElementById("creator_id").value,
+    image_url: "",
+    comment: document.getElementById("comment").value
+  };
+
+  const response = await fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+
+  const result = await response.json();
+
+  alert(`티켓 생성 완료: ${result.ticket_id}`);
+
+  document.getElementById("ticketForm").reset();
+
+});
+
+</script>
+
+</body>
+</html>
