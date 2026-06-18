@@ -110,15 +110,14 @@ document.getElementById("ticketForm").addEventListener("submit", async (e) => {
     comment: document.getElementById("comment").value
   };
 
-  const response = await fetch(SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
+  await fetch(SCRIPT_URL, {
+  method: "POST",
+  mode: "no-cors",
+  body: JSON.stringify(payload)
+});
 
-  const result = await response.json();
-
-  alert(`티켓 생성 완료: ${result.ticket_id}`);
-
+alert("티켓이 접수되었습니다.");
+  
   document.getElementById("ticketForm").reset();
 
 });
