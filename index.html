@@ -59,6 +59,9 @@
   <label>작업자 ID</label>
   <input type="text" id="creator_id" required>
 
+  <label>사진 첨부</label>
+  <input type="file" id="photo" accept="image/*" required>
+
   <label>코멘트</label>
   <textarea id="comment"></textarea>
 
@@ -74,12 +77,36 @@ document.getElementById("ticketForm").addEventListener("submit", async (e) => {
 
   e.preventDefault();
 
+  const photoFile = document.getElementById("photo").files[0];
+
+  let image = null;
+
+  if (photoFile) {
+
+    const base64 = await new Promise((resolve) => {
+
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        resolve(reader.result.split(",")[1]);
+      };
+
+      reader.readAsDataURL(photoFile);
+
+    });
+
+    image = {
+      mimeType: photoFile.type,
+      base64: base64
+    };
+  }
+
   const payload = {
     category: document.getElementById("category").value,
     bulk_label: document.getElementById("bulk_label").value,
     sku: document.getElementById("sku").value,
     creator_id: document.getElementById("creator_id").value,
-    image_url: "",
+    image: image,
     comment: document.getElementById("comment").value
   };
 
