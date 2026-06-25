@@ -1,460 +1,368 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>RT ADMIN</title>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-*{
-  box-sizing:border-box;
-  margin:0;
-  padding:0;
-}
-
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;
-  background:#f4f6f8;
-}
-
-.wrap{
-  max-width:1200px;
-  margin:auto;
-  padding:20px;
-}
-
-header{
-  font-size:28px;
-  font-weight:800;
-  margin-bottom:20px;
-}
-
-.dashboard{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:16px;
-  margin-bottom:20px;
-}
-
-.chart-card{
-  background:white;
-  padding:16px;
-  border-radius:14px;
-  box-shadow:0 2px 8px rgba(0,0,0,.08);
-}
-
-.chart-title{
-  font-weight:700;
-  margin-bottom:10px;
-}
-
-.toolbar{
-  display:flex;
-  gap:10px;
-  margin-bottom:15px;
-  flex-wrap:wrap;
-}
-
-.toolbar input{
-  flex:1;
-  min-width:220px;
-  padding:10px;
-  border:1px solid #ddd;
-  border-radius:10px;
-}
-
-.filter-btn{
-  border:none;
-  background:#ddd;
-  padding:10px 14px;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:700;
-}
-
-.filter-btn:hover{
-  background:#bbb;
-}
-
-.ticket-list{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-
-.card{
-  background:white;
-  border-radius:14px;
-  padding:16px;
-  box-shadow:0 2px 8px rgba(0,0,0,.08);
-}
-
-.top{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:10px;
-}
-
-.ticket-id{
-  font-size:18px;
-  font-weight:800;
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-  gap:10px;
-  margin-bottom:12px;
-}
-
-.item{
-  font-size:14px;
-}
-
-.label{
-  color:#666;
-  font-size:12px;
-}
-
-.actions{
-  display:flex;
-  gap:10px;
-  align-items:center;
-}
-
-select{
-  padding:8px;
-  border-radius:8px;
-}
-
-.btn{
-  border:none;
-  padding:8px 12px;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:700;
-}
-
-.delete{
-  background:#ff4d4f;
-  color:white;
-}
-
-@media(max-width:768px){
-
-.dashboard{
-  grid-template-columns:1fr;
-}
-
-.top{
-  flex-direction:column;
-  align-items:flex-start;
-  gap:10px;
-}
-
-}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RT Ticket Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{--bg:#f4f6fa;--panel:#fff;--text:#152033;--muted:#64748b;--line:#dbe1ea;--brand:#2563eb;--green:#14804a;--amber:#b7791f;--red:#c2410c;--shadow:0 10px 28px rgba(15,23,42,.07)}
+    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+    header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
+    .wrap{width:min(1280px,100%);margin:0 auto;padding:16px}.topbar{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    h1,h2{margin:0;letter-spacing:0}h1{font-size:21px}h2{font-size:17px}
+    button,select,input{min-height:40px;border-radius:8px;font:inherit}button{border:0;padding:10px 12px;background:#e8eef8;color:#243044;font-weight:900;cursor:pointer}button.primary{background:var(--brand);color:#fff}button.danger{background:#fee2e2;color:var(--red)}
+    input,select{width:100%;border:1px solid var(--line);background:#fff;padding:9px 10px;color:var(--text)}
+    .dashboard{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}.metric,.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow)}
+    .metric{padding:16px;display:grid;gap:6px}.metric span{color:var(--muted);font-size:13px;font-weight:900}.metric strong{font-size:30px;line-height:1}
+    .charts{display:grid;grid-template-columns:360px minmax(0,1fr);gap:12px;margin-bottom:12px}.panel{padding:16px;min-width:0}.chartbox{height:280px;margin-top:10px}
+    .filters{display:grid;grid-template-columns:1.2fr repeat(4,minmax(120px,.8fr)) auto;gap:8px;align-items:end;margin-bottom:12px}
+    label{display:grid;gap:6px;color:#334155;font-size:12px;font-weight:900}.range{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.range button.active{background:#dbeafe;color:var(--brand)}
+    .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:#fff}table{width:100%;min-width:980px;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:13px}th{position:sticky;top:73px;z-index:5;background:#f8fafc;color:#334155;font-size:12px}tr:hover td{background:#fbfdff}
+    .badge{display:inline-flex;align-items:center;min-height:26px;border-radius:999px;padding:3px 9px;font-size:12px;font-weight:900;background:#eef2f7}.badge.접수{background:#fff4d6;color:var(--amber)}.badge.진행중{background:#e8f1ff;color:var(--brand)}.badge.완료{background:#e8f8ef;color:var(--green)}
+    .row-actions{display:flex;gap:6px;align-items:center;min-width:220px}.empty{padding:24px;text-align:center;color:var(--muted)}
+    dialog{width:min(720px,calc(100% - 28px));border:0;border-radius:8px;padding:0;box-shadow:0 24px 80px rgba(15,23,42,.3)}dialog::backdrop{background:rgba(15,23,42,.45)}.modal{padding:18px}.detail-grid{display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px 12px;margin:14px 0}.detail-grid b{color:#334155}pre{white-space:pre-wrap;word-break:break-word;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:12px;margin:0;max-height:260px;overflow:auto}
+    @media(max-width:900px){.dashboard{grid-template-columns:repeat(2,1fr)}.charts,.filters{grid-template-columns:1fr}th{position:static}}@media(max-width:560px){.wrap{padding:12px}.topbar{flex-direction:column;align-items:flex-start}.dashboard{grid-template-columns:1fr 1fr;gap:8px}.metric{padding:12px}.metric strong{font-size:24px}.panel{padding:12px}.chartbox{height:240px}}
+  </style>
 </head>
-
 <body>
-
-<div class="wrap">
-
-<header>RT ADMIN</header>
-
-<div class="dashboard">
-
-<div class="chart-card">
-<div class="chart-title">Status 현황</div>
-<canvas id="statusChart"></canvas>
-</div>
-
-<div class="chart-card">
-<div class="chart-title">문제 유형 현황</div>
-<canvas id="categoryChart"></canvas>
-</div>
-
-</div>
-
-<div class="toolbar">
-
-<input
-id="search"
-placeholder="벌크라벨 / SKU / 티켓번호 검색"
-oninput="renderTickets()"
-/>
-
-<button class="filter-btn" onclick="changeDays(0)">오늘</button>
-<button class="filter-btn" onclick="changeDays(7)">7일</button>
-<button class="filter-btn" onclick="changeDays(30)">30일</button>
-<button class="filter-btn" onclick="changeDays(9999)">전체</button>
-
-</div>
-
-<div id="ticketList" class="ticket-list"></div>
-
-</div>
-
-<script>
-
-const SCRIPT_URL =
-"https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
-
-let tickets = [];
-let currentDays = 7;
-
-let statusChart;
-let categoryChart;
-
-function changeDays(days){
-  currentDays = days;
-  loadTickets();
-}
-
-async function loadTickets(){
-
-  const res = await fetch(SCRIPT_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"list",
-      days:currentDays
-    })
-  });
-
-  tickets = await res.json();
-
-  tickets.sort((a,b)=>
-    new Date(b.date)-new Date(a.date)
-  );
-
-  drawCharts();
-  renderTickets();
-}
-
-function drawCharts(){
-
-  const statusCount = {};
-  const categoryCount = {};
-
-  tickets.forEach(t=>{
-
-    const s = t.status || "접수";
-    const c = t.category || "기타";
-
-    statusCount[s] =
-      (statusCount[s] || 0) + 1;
-
-    categoryCount[c] =
-      (categoryCount[c] || 0) + 1;
-  });
-
-  if(statusChart) statusChart.destroy();
-  if(categoryChart) categoryChart.destroy();
-
-  statusChart = new Chart(
-    document.getElementById("statusChart"),
-    {
-      type:"doughnut",
-      data:{
-        labels:Object.keys(statusCount),
-        datasets:[{
-          data:Object.values(statusCount)
-        }]
-      }
-    }
-  );
-
-  categoryChart = new Chart(
-    document.getElementById("categoryChart"),
-    {
-      type:"bar",
-      data:{
-        labels:Object.keys(categoryCount),
-        datasets:[{
-          label:"건수",
-          data:Object.values(categoryCount)
-        }]
-      }
-    }
-  );
-}
-
-function renderTickets(){
-
-  const keyword =
-    document
-    .getElementById("search")
-    .value
-    .toLowerCase();
-
-  const filtered = tickets.filter(t=>{
-
-    return (
-      (t.bulk_label || "")
-      .toLowerCase()
-      .includes(keyword)
-
-      ||
-
-      (t.sku || "")
-      .toLowerCase()
-      .includes(keyword)
-
-      ||
-
-      (t.ticketId || "")
-      .toLowerCase()
-      .includes(keyword)
-    );
-  });
-
-  const box =
-    document.getElementById("ticketList");
-
-  box.innerHTML = "";
-
-  filtered.forEach(t=>{
-
-    box.innerHTML += `
-
-    <div class="card">
-
-      <div class="top">
-
-        <div class="ticket-id">
-          ${t.ticketId}
-        </div>
-
-        <div class="actions">
-
-          <select
-            onchange="updateStatus(
-              '${t.ticketId}',
-              this.value
-            )"
-          >
-
-            <option
-              ${t.status==="접수"?"selected":""}
-            >
-              접수
-            </option>
-
-            <option
-              ${t.status==="확인중"?"selected":""}
-            >
-              확인중
-            </option>
-
-            <option
-              ${t.status==="고객사 확인중"?"selected":""}
-            >
-              고객사 확인중
-            </option>
-
-            <option
-              ${t.status==="완료"?"selected":""}
-            >
-              완료
-            </option>
-
-          </select>
-
-          <button
-            class="btn delete"
-            onclick="deleteTicket(
-              '${t.ticketId}'
-            )"
-          >
-            삭제
-          </button>
-
-        </div>
-
-      </div>
-
-      <div class="grid">
-
-        <div class="item">
-          <div class="label">벌크라벨</div>
-          ${t.bulk_label || "-"}
-        </div>
-
-        <div class="item">
-          <div class="label">SKU</div>
-          ${t.sku || "-"}
-        </div>
-
-        <div class="item">
-          <div class="label">카테고리</div>
-          ${t.category || "-"}
-        </div>
-
-        <div class="item">
-          <div class="label">작성자</div>
-          ${t.creator_id || "-"}
-        </div>
-
-        <div class="item">
-          <div class="label">작성일</div>
-          ${t.date || "-"}
-        </div>
-
-        <div class="item">
-          <div class="label">상태</div>
-          ${t.status || "접수"}
-        </div>
-
-      </div>
-
-      <div class="item">
-        <div class="label">코멘트</div>
-        ${t.comment || "-"}
-      </div>
-
+<header><div class="wrap topbar"><h1>RT Ticket Admin</h1><button class="primary" id="refreshBtn" type="button">새로고침</button></div></header>
+<main class="wrap">
+  <section class="dashboard">
+    <div class="metric"><span>전체 티켓</span><strong id="countAll">0</strong></div>
+    <div class="metric"><span>접수</span><strong id="countOpen">0</strong></div>
+    <div class="metric"><span>진행중</span><strong id="countProgress">0</strong></div>
+    <div class="metric"><span>완료</span><strong id="countDone">0</strong></div>
+  </section>
+
+  <section class="charts">
+    <div class="panel"><h2>Status</h2><div class="chartbox"><canvas id="statusChart"></canvas></div></div>
+    <div class="panel"><h2>Category</h2><div class="chartbox"><canvas id="categoryChart"></canvas></div></div>
+  </section>
+
+  <section class="panel">
+    <div class="range">
+      <button type="button" data-range="today">오늘</button>
+      <button type="button" data-range="1">1일</button>
+      <button type="button" data-range="7" class="active">7일</button>
+      <button type="button" data-range="30">30일</button>
+      <button type="button" data-range="all">전체</button>
     </div>
 
-    `;
+    <div class="filters">
+      <label>검색 <input id="keyword" placeholder="Ticket ID, SKU, 코멘트"></label>
+      <label>Bulk Label <input id="bulkLabel" placeholder="벌크라벨"></label>
+      <label>Ticket ID <input id="ticketId" placeholder="MMDD-01"></label>
+      <label>작업자 ID <input id="creatorId" placeholder="작업자"></label>
+      <label>Status
+        <select id="status">
+          <option value="">전체</option>
+          <option>접수</option>
+          <option>진행중</option>
+          <option>완료</option>
+        </select>
+      </label>
+      <button id="applyFilters" class="primary" type="button">적용</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Ticket ID</th><th>Date</th><th>Category</th><th>Bulk Label</th>
+            <th>SKU</th><th>작업자</th><th>Status</th><th>작업</th>
+          </tr>
+        </thead>
+        <tbody id="ticketRows">
+          <tr><td colspan="8" class="empty">데이터를 불러오는 중입니다.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<dialog id="detailDialog">
+  <div class="modal">
+    <h2>티켓 상세</h2>
+    <div id="detailBody"></div>
+    <button type="button" onclick="document.querySelector('#detailDialog').close()">닫기</button>
+  </div>
+</dialog>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec';
+const STATUSES = ['접수', '진행중', '완료'];
+const state = { tickets: [], filtered: [], range: '7', statusChart: null, categoryChart: null };
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+document.addEventListener('DOMContentLoaded', () => {
+  $('#refreshBtn').addEventListener('click', loadTickets);
+  $('#applyFilters').addEventListener('click', applyFilters);
+  ['keyword', 'bulkLabel', 'ticketId', 'creatorId'].forEach((id) => {
+    $('#' + id).addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') applyFilters();
+    });
   });
-}
-
-async function updateStatus(ticketId,status){
-
-  await fetch(SCRIPT_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"updateStatus",
-      ticketId,
-      status
-    })
+  $('#status').addEventListener('change', applyFilters);
+  $$('.range button').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.range = button.dataset.range;
+      $$('.range button').forEach((item) => item.classList.toggle('active', item === button));
+      applyFilters();
+    });
   });
-
   loadTickets();
+});
+
+async function loadTickets() {
+  $('#ticketRows').innerHTML = '<tr><td colspan="8" class="empty">데이터를 불러오는 중입니다.</td></tr>';
+
+  try {
+    const data = await api('list', {});
+    state.tickets = data.tickets || [];
+    applyFilters();
+  } catch (err) {
+    $('#ticketRows').innerHTML = `<tr><td colspan="8" class="empty">${escapeHtml(err.message)}</td></tr>`;
+  }
 }
 
-async function deleteTicket(ticketId){
+function applyFilters() {
+  const filters = {
+    keyword: $('#keyword').value.trim().toLowerCase(),
+    bulkLabel: $('#bulkLabel').value.trim(),
+    ticketId: $('#ticketId').value.trim(),
+    creatorId: $('#creatorId').value.trim(),
+    status: $('#status').value,
+  };
 
-  if(!confirm("정말 삭제할까요?"))
+  const minDate = getMinDate(state.range);
+
+  state.filtered = state.tickets.filter((ticket) => {
+    if (minDate && parseTicketDate(ticket.date) < minDate) return false;
+    if (filters.bulkLabel && ticket.bulkLabel !== filters.bulkLabel) return false;
+    if (filters.ticketId && ticket.ticketId !== filters.ticketId) return false;
+    if (filters.creatorId && ticket.creatorId !== filters.creatorId) return false;
+    if (filters.status && ticket.status !== filters.status) return false;
+
+    if (filters.keyword) {
+      const haystack = [
+        ticket.ticketId,
+        ticket.category,
+        ticket.bulkLabel,
+        ticket.sku,
+        ticket.creatorId,
+        ticket.comment,
+        ticket.status,
+      ].join(' ').toLowerCase();
+
+      if (!haystack.includes(filters.keyword)) return false;
+    }
+
+    return true;
+  });
+
+  renderDashboard();
+  renderCharts();
+  renderRows();
+}
+
+function renderDashboard() {
+  const counts = countByStatus(state.filtered);
+  $('#countAll').textContent = state.filtered.length;
+  $('#countOpen').textContent = counts['접수'] || 0;
+  $('#countProgress').textContent = counts['진행중'] || 0;
+  $('#countDone').textContent = counts['완료'] || 0;
+}
+
+function renderCharts() {
+  const statusCounts = countByStatus(state.filtered);
+  const categoryCounts = state.filtered.reduce((acc, ticket) => {
+    const key = ticket.category || '미분류';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  state.statusChart = drawChart(
+    state.statusChart,
+    $('#statusChart'),
+    'doughnut',
+    STATUSES,
+    STATUSES.map((key) => statusCounts[key] || 0),
+    ['#f59e0b', '#2563eb', '#16a34a']
+  );
+
+  state.categoryChart = drawChart(
+    state.categoryChart,
+    $('#categoryChart'),
+    'bar',
+    Object.keys(categoryCounts),
+    Object.values(categoryCounts),
+    '#2563eb'
+  );
+}
+
+function renderRows() {
+  if (!state.filtered.length) {
+    $('#ticketRows').innerHTML = '<tr><td colspan="8" class="empty">조회된 티켓이 없습니다.</td></tr>';
     return;
+  }
 
-  await fetch(SCRIPT_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"deleteTicket",
-      ticketId
-    })
+  $('#ticketRows').innerHTML = state.filtered.map((ticket) => `
+    <tr>
+      <td><b>${escapeHtml(ticket.ticketId)}</b></td>
+      <td>${escapeHtml(ticket.date)}</td>
+      <td>${escapeHtml(ticket.category)}</td>
+      <td>${escapeHtml(ticket.bulkLabel)}</td>
+      <td>${escapeHtml(ticket.sku)}</td>
+      <td>${escapeHtml(ticket.creatorId)}</td>
+      <td><span class="badge ${escapeHtml(ticket.status)}">${escapeHtml(ticket.status)}</span></td>
+      <td>
+        <div class="row-actions">
+          <select data-ticket-id="${escapeHtml(ticket.ticketId)}">
+            ${STATUSES.map((status) => `<option ${status === ticket.status ? 'selected' : ''}>${status}</option>`).join('')}
+          </select>
+          <button type="button" data-detail="${escapeHtml(ticket.ticketId)}">상세</button>
+          <button class="danger" type="button" data-delete="${escapeHtml(ticket.ticketId)}">삭제</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  $$('select[data-ticket-id]').forEach((select) => {
+    select.addEventListener('change', () => changeStatus(select.dataset.ticketId, select.value));
   });
 
-  loadTickets();
+  $$('button[data-detail]').forEach((button) => {
+    button.addEventListener('click', () => showDetail(button.dataset.detail));
+  });
+
+  $$('button[data-delete]').forEach((button) => {
+    button.addEventListener('click', () => deleteTicket(button.dataset.delete));
+  });
 }
 
-loadTickets();
+async function changeStatus(ticketId, status) {
+  try {
+    await api('updateStatus', { ticketId, status, actor: 'admin' });
+    await loadTickets();
+  } catch (err) {
+    alert(err.message);
+    await loadTickets();
+  }
+}
 
+async function deleteTicket(ticketId) {
+  if (!confirm(`${ticketId} 티켓을 삭제할까요?`)) return;
+
+  try {
+    await api('deleteTicket', { ticketId, actor: 'admin' });
+    await loadTickets();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+function showDetail(ticketId) {
+  const ticket = state.tickets.find((item) => item.ticketId === ticketId);
+  if (!ticket) return;
+
+  $('#detailBody').innerHTML = `
+    <div class="detail-grid">
+      <b>Ticket ID</b><span>${escapeHtml(ticket.ticketId)}</span>
+      <b>Date</b><span>${escapeHtml(ticket.date)}</span>
+      <b>Category</b><span>${escapeHtml(ticket.category)}</span>
+      <b>Bulk Label</b><span>${escapeHtml(ticket.bulkLabel)}</span>
+      <b>SKU</b><span>${escapeHtml(ticket.sku)}</span>
+      <b>작업자 ID</b><span>${escapeHtml(ticket.creatorId)}</span>
+      <b>Status</b><span><span class="badge ${escapeHtml(ticket.status)}">${escapeHtml(ticket.status)}</span></span>
+      <b>Comment</b><span>${escapeHtml(ticket.comment || '')}</span>
+    </div>
+    <h2>History</h2>
+    <pre>${escapeHtml(ticket.history || '')}</pre>
+  `;
+
+  $('#detailDialog').showModal();
+}
+
+async function api(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, payload }),
+  });
+
+  const json = await res.json();
+
+  if (!json.ok) {
+    throw new Error(json.error?.message || '요청 처리 중 오류가 발생했습니다.');
+  }
+
+  return json.data;
+}
+
+function drawChart(existing, canvas, type, labels, data, colors) {
+  if (existing) existing.destroy();
+
+  return new Chart(canvas, {
+    type,
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: colors,
+        borderWidth: type === 'doughnut' ? 2 : 0,
+        borderColor: '#fff',
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: type === 'doughnut' ? 'bottom' : 'top' },
+      },
+      scales: type === 'bar'
+        ? { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        : {},
+    },
+  });
+}
+
+function countByStatus(tickets) {
+  return tickets.reduce((acc, ticket) => {
+    const key = ticket.status || '접수';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+}
+
+function getMinDate(range) {
+  if (range === 'all') return null;
+
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (range === 'today') return start;
+
+  start.setDate(start.getDate() - Number(range));
+  return start;
+}
+
+function parseTicketDate(value) {
+  if (!value) return new Date(0);
+  return new Date(String(value).replace(' ', 'T'));
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[char]));
+}
 </script>
-
 </body>
 </html>
