@@ -1,332 +1,233 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>RT Ticket System</title>
-
-<style>
-  * { box-sizing: border-box; }
-
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
-    background: #f4f6f8;
-    color: #222;
-  }
-
-  .wrap {
-    max-width: 520px;
-    margin: 0 auto;
-    padding: 16px;
-  }
-
-  header {
-    text-align: center;
-    font-size: 20px;
-    font-weight: 700;
-    padding: 16px 0;
-  }
-
-  .tabs {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-
-  .tabs button {
-    flex: 1;
-    padding: 12px;
-    border: none;
-    border-radius: 10px;
-    background: #eee;
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  .tabs button.active {
-    background: #ff4d4f;
-    color: white;
-  }
-
-  .card {
-    background: #fff;
-    border-radius: 14px;
-    padding: 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  }
-
-  label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 6px;
-    color: #555;
-  }
-
-  .desc {
-    font-size: 12px;
-    color: #888;
-    margin-bottom: 8px;
-  }
-
-  input, select, textarea {
-    width: 100%;
-    padding: 14px;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    font-size: 15px;
-  }
-
-  textarea { resize: none; }
-
-  .btn {
-    width: 100%;
-    padding: 16px;
-    border: none;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    background: #ff4d4f;
-    color: white;
-    margin-top: 10px;
-  }
-
-  .btn.gray { background: #333; }
-
-  .modal-bg {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: none;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .modal {
-    background: white;
-    width: 85%;
-    max-width: 360px;
-    border-radius: 14px;
-    padding: 20px;
-    text-align: center;
-  }
-
-  .modal button {
-    width: 48%;
-    padding: 12px;
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-  }
-
-  .yes { background:#ff4d4f; color:white; }
-  .no { background:#eee; }
-
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RT Ticket System</title>
+  <style>
+    :root{--bg:#f5f7fb;--panel:#fff;--text:#172033;--muted:#6b7280;--line:#d9dee8;--brand:#1f6feb;--ok:#108a43;--warn:#b7791f;--shadow:0 12px 32px rgba(17,24,39,.08)}
+    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+    header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.92);border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
+    .bar,main{width:min(1080px,100%);margin:0 auto;padding:16px}.bar{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    h1{margin:0;font-size:20px}h2{margin:0 0 14px;font-size:18px}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 18px;padding:4px;background:#e9edf5;border-radius:8px}
+    .tab{border:0;border-radius:6px;padding:12px 10px;font-weight:800;color:var(--muted);background:transparent;cursor:pointer}.tab.active{color:var(--brand);background:#fff;box-shadow:0 1px 4px rgba(17,24,39,.08)}
+    .layout{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:16px;align-items:start}section,.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow)}section{padding:18px}
+    form{display:grid;gap:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{display:grid;gap:7px;font-size:13px;font-weight:800;color:#334155}
+    input,select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:12px;color:var(--text);background:#fff;font:inherit}textarea{min-height:120px;resize:vertical}
+    input:focus,select:focus,textarea:focus{outline:3px solid rgba(31,111,235,.16);border-color:var(--brand)}.filebox{border:1px dashed #9aa7bd;border-radius:8px;padding:14px;background:#fbfcff}
+    .hint{margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.5}.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    button{border:0;border-radius:8px;padding:12px 14px;min-height:44px;font-weight:900;cursor:pointer;background:#e8eef8;color:#23304a}button.primary{background:var(--brand);color:#fff}button:disabled{opacity:.58;cursor:progress}
+    .result{border:1px solid #b7d5ff;background:#eef6ff;padding:14px;border-radius:8px;display:none;line-height:1.6}.ticket-list{display:grid;gap:10px;margin-top:12px}.ticket{border:1px solid var(--line);border-radius:8px;padding:14px;display:grid;gap:8px;background:#fff}
+    .ticket-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.ticket-id{font-size:18px;font-weight:900}.badge{display:inline-flex;align-items:center;min-height:28px;border-radius:999px;padding:4px 10px;background:#eef2f7;font-size:12px;font-weight:900;color:#334155}.badge.접수{background:#fff4d6;color:var(--warn)}.badge.진행중{background:#e8f1ff;color:var(--brand)}.badge.완료{background:#e8f8ef;color:var(--ok)}.meta{color:var(--muted);font-size:13px;line-height:1.5}
+    dialog{width:min(460px,calc(100% - 32px));border:0;border-radius:8px;padding:0;box-shadow:0 24px 80px rgba(15,23,42,.28)}dialog::backdrop{background:rgba(15,23,42,.45)}.modal{padding:20px}.modal h3{margin:0 0 10px}.modal p{margin:0 0 16px;color:var(--muted);line-height:1.55}.hidden{display:none!important}
+    @media(max-width:760px){.layout,.grid{grid-template-columns:1fr}.bar{align-items:flex-start;flex-direction:column}section{padding:16px;border-left:0;border-right:0;border-radius:0;box-shadow:none}main{padding:12px 0 28px}.tabs{margin-left:12px;margin-right:12px}}
+  </style>
 </head>
-
 <body>
-
-<div class="wrap">
-
-  <header>RT Ticket System</header>
-
+<header><div class="bar"><h1>RT Ticket System</h1><span class="badge">Ticket</span></div></header>
+<main>
   <div class="tabs">
-    <button id="tab1" class="active" onclick="showTab('submit')">티켓 제출</button>
-    <button id="tab2" onclick="showTab('my')">내 티켓</button>
+    <button class="tab active" type="button" data-view="createView">티켓 제출</button>
+    <button class="tab" type="button" data-view="myView">내 티켓 조회</button>
   </div>
 
-  <!-- 제출 -->
-  <div id="view_submit">
+  <div class="layout">
+    <section id="createView">
+      <h2>티켓 제출</h2>
+      <form id="ticketForm">
+        <div class="grid">
+          <label>문제 카테고리
+            <select name="category" required>
+              <option value="">선택</option>
+              <option>수량 상이</option>
+              <option>상품 불량</option>
+              <option>라벨 오류</option>
+              <option>SKU 불일치</option>
+              <option>기타</option>
+            </select>
+          </label>
+          <label>벌크라벨 <input name="bulkLabel" required placeholder="예: BL-20260626-01"></label>
+        </div>
+        <div class="grid">
+          <label>SKU <input name="sku" required placeholder="SKU 입력"></label>
+          <label>작업자 ID <input name="creatorId" required placeholder="작업자 ID 입력"></label>
+        </div>
+        <label>코멘트 <textarea name="comment" placeholder="문제 상황을 입력하세요."></textarea></label>
+        <label class="filebox">사진 첨부
+          <input id="images" type="file" accept="image/*" multiple>
+          <span class="hint">이미지는 G열에 JSON 배열 형태로 저장됩니다. 시트 셀 용량을 고려해 최대 3장까지 압축 저장합니다.</span>
+        </label>
+        <div class="actions">
+          <button class="primary" type="submit">제출</button>
+          <button type="reset">초기화</button>
+        </div>
+      </form>
+      <div id="submitResult" class="result"></div>
+    </section>
 
-    <form id="ticketForm">
+    <section id="myView" class="hidden">
+      <h2>내 티켓 조회</h2>
+      <form id="lookupForm">
+        <label>작업자 ID <input name="creatorId" required placeholder="제출 시 입력한 작업자 ID"></label>
+        <div class="actions">
+          <button class="primary" type="submit">조회</button>
+          <button id="remindBtn" type="button">리마인드 저장</button>
+        </div>
+      </form>
+      <div id="lookupStatus" class="hint"></div>
+      <div id="myTickets" class="ticket-list"></div>
+    </section>
 
-      <div class="card">
-        <label>문제 카테고리</label>
-        <select id="category">
-          <option value="">선택 안함</option>
-          <option>타매장</option>
-          <option>RCP 오류</option>
-          <option>RFID 오류</option>
-          <option>ART 오류</option>
-          <option>벌크라벨 훼손</option>
-          <option>기타</option>
-        </select>
-      </div>
-
-      <div class="card">
-        <label>벌크라벨</label>
-        <div class="desc">스캔 / 없으면 X</div>
-        <input type="text" id="bulk_label">
-      </div>
-
-      <div class="card">
-        <label>SKU</label>
-        <div class="desc">스캔 우선 / 수기 가능</div>
-        <textarea id="sku" rows="3"></textarea>
-      </div>
-
-      <div class="card">
-        <label>작업자 ID</label>
-        <input type="text" id="creator_id">
-      </div>
-
-      <div class="card">
-        <label>코멘트</label>
-        <textarea id="comment" rows="3"></textarea>
-      </div>
-
-      <button type="button" class="btn" onclick="openModal()">티켓 제출</button>
-
-    </form>
+    <aside class="panel" style="padding:18px">
+      <h2>처리 상태</h2>
+      <div class="ticket"><div class="ticket-head"><b>접수</b><span class="badge 접수">신규</span></div><div class="meta">담당자 확인 전입니다.</div></div>
+      <div class="ticket"><div class="ticket-head"><b>진행중</b><span class="badge 진행중">확인</span></div><div class="meta">담당자가 처리 중입니다.</div></div>
+      <div class="ticket"><div class="ticket-head"><b>완료</b><span class="badge 완료">종료</span></div><div class="meta">조치가 완료되었습니다.</div></div>
+    </aside>
   </div>
+</main>
 
-  <!-- 내 티켓 -->
-  <div id="view_my" style="display:none;">
-
-    <button class="btn gray" onclick="loadMyTickets()">전체 티켓 불러오기</button>
-
-    <div id="myTickets"></div>
-
-  </div>
-
-</div>
-
-<!-- modal -->
-<div class="modal-bg" id="modal">
+<dialog id="confirmDialog">
   <div class="modal">
-    <h3>전송하시겠습니까?</h3>
-    <div style="display:flex;gap:10px;margin-top:10px;">
-      <button class="no" onclick="closeModal()">취소</button>
-      <button class="yes" onclick="submitTicket()">전송</button>
+    <h3>티켓을 제출할까요?</h3>
+    <p id="confirmSummary"></p>
+    <div class="actions">
+      <button class="primary" id="confirmSubmit" type="button">제출</button>
+      <button id="cancelSubmit" type="button">취소</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec';
+const state = { pendingPayload: null, submitting: false };
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
+$$('.tab').forEach((button) => {
+  button.addEventListener('click', () => {
+    $$('.tab').forEach((item) => item.classList.toggle('active', item === button));
+    ['createView', 'myView'].forEach((id) => $('#' + id).classList.toggle('hidden', id !== button.dataset.view));
+  });
+});
 
-/* 탭 */
-function showTab(tab) {
+$('#ticketForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+  payload.images = await readImages(Array.from($('#images').files || []));
+  state.pendingPayload = payload;
+  $('#confirmSummary').textContent = `${payload.category} / ${payload.bulkLabel} / ${payload.sku} 티켓을 생성합니다.`;
+  $('#confirmDialog').showModal();
+});
 
-  const s = document.getElementById("view_submit");
-  const m = document.getElementById("view_my");
+$('#cancelSubmit').addEventListener('click', () => $('#confirmDialog').close());
+$('#confirmSubmit').addEventListener('click', submitTicket);
 
-  document.getElementById("tab1").classList.remove("active");
-  document.getElementById("tab2").classList.remove("active");
+$('#lookupForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const creatorId = new FormData(event.currentTarget).get('creatorId').trim();
+  await loadMyTickets(creatorId);
+});
 
-  if (tab === "submit") {
-    s.style.display = "block";
-    m.style.display = "none";
-    document.getElementById("tab1").classList.add("active");
-  } else {
-    s.style.display = "none";
-    m.style.display = "block";
-    document.getElementById("tab2").classList.add("active");
+$('#remindBtn').addEventListener('click', () => {
+  const creatorId = new FormData($('#lookupForm')).get('creatorId').trim();
+  if (!creatorId) {
+    $('#lookupStatus').textContent = '작업자 ID를 먼저 입력하세요.';
+    return;
   }
-}
-
-/* 제출 */
-function openModal() {
-  document.getElementById("modal").style.display = "flex";
-}
-
-function closeModal() {
-  document.getElementById("modal").style.display = "none";
-}
+  localStorage.setItem('rt-ticket-reminder', JSON.stringify({ creatorId, savedAt: new Date().toISOString() }));
+  $('#lookupStatus').textContent = '이 브라우저에 리마인드가 저장되었습니다.';
+});
 
 async function submitTicket() {
-
-  const payload = {
-    category: category.value,
-    bulk_label: bulk_label.value,
-    sku: sku.value,
-    creator_id: creator_id.value,
-    comment: comment.value
-  };
-
-  await fetch(SCRIPT_URL, {
-    method: "POST",
-    mode: "no-cors",
-    body: JSON.stringify(payload)
-  });
-
-  closeModal();
-  alert("접수 완료");
-  ticketForm.reset();
-}
-
-/* 내 티켓 (전체 보기) */
-async function loadMyTickets() {
-
-  const box = document.getElementById("myTickets");
-  box.innerHTML = "로딩중...";
+  if (state.submitting || !state.pendingPayload) return;
+  state.submitting = true;
+  $('#confirmSubmit').disabled = true;
 
   try {
-
-    const res = await fetch(SCRIPT_URL + "?mode=read");
-    const text = await res.text();
-
-    const data = JSON.parse(text || "[]");
-
-    if (!Array.isArray(data) || data.length === 0) {
-      box.innerHTML = "<div class='card'>티켓 없음</div>";
-      return;
-    }
-
-    box.innerHTML = "";
-
-    data.reverse().forEach(t => {
-
-      const status = t.status || "pending";
-
-      const color =
-        status === "done" ? "green" :
-        status === "processing" ? "blue" :
-        "orange";
-
-      box.innerHTML += `
-        <div class="card">
-          <b>${t.bulk_label || "-"}</b><br>
-          상태: <span style="color:${color};font-weight:700;">${status}</span><br>
-          카테고리: ${t.category || "-"}<br>
-          작업자: ${t.creator_id || "-"}<br>
-
-          <button class="btn gray" onclick="sendRemind('${t.bulk_label}')">
-            리마인드
-          </button>
-        </div>
-      `;
-    });
-
-  } catch (e) {
-    box.innerHTML = "<div class='card'>불러오기 실패</div>";
+    const ticket = await api('createTicket', state.pendingPayload);
+    $('#confirmDialog').close();
+    $('#ticketForm').reset();
+    $('#submitResult').style.display = 'block';
+    $('#submitResult').innerHTML = `<b>제출 완료</b><br>티켓번호: <b>${escapeHtml(ticket.ticketId)}</b><br>상태: ${escapeHtml(ticket.status)}`;
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    state.submitting = false;
+    $('#confirmSubmit').disabled = false;
   }
 }
 
-/* 리마인드 */
-async function sendRemind(id) {
+async function loadMyTickets(creatorId) {
+  $('#lookupStatus').textContent = '조회 중입니다.';
+  $('#myTickets').innerHTML = '';
 
-  await fetch(SCRIPT_URL, {
-    method: "POST",
-    mode: "no-cors",
-    body: JSON.stringify({
-      type: "remind",
-      bulk_label: id
-    })
-  });
-
-  alert("리마인드 전송");
+  try {
+    const data = await api('list', { creatorId });
+    const tickets = data.tickets || [];
+    $('#lookupStatus').textContent = `${tickets.length}건이 조회되었습니다.`;
+    $('#myTickets').innerHTML = tickets.map(renderTicket).join('') || '<div class="hint">조회된 티켓이 없습니다.</div>';
+  } catch (err) {
+    $('#lookupStatus').textContent = err.message;
+  }
 }
 
-</script>
+async function api(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, payload }),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error?.message || '요청 처리 중 오류가 발생했습니다.');
+  return json.data;
+}
 
+async function readImages(files) {
+  const images = [];
+  for (const file of files.slice(0, 3)) {
+    images.push({ name: file.name, type: file.type, dataUrl: await resizeImage(file, 1280, .72) });
+  }
+  return images;
+}
+
+function resizeImage(file, maxSize, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const ratio = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderTicket(ticket) {
+  return `<article class="ticket">
+    <div class="ticket-head"><span class="ticket-id">${escapeHtml(ticket.ticketId)}</span><span class="badge ${escapeHtml(ticket.status)}">${escapeHtml(ticket.status)}</span></div>
+    <div><b>${escapeHtml(ticket.category)}</b> · ${escapeHtml(ticket.bulkLabel)} · ${escapeHtml(ticket.sku)}</div>
+    <div class="meta">${escapeHtml(ticket.date)}<br>${escapeHtml(ticket.comment || '')}</div>
+  </article>`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+}
+
+try {
+  const saved = JSON.parse(localStorage.getItem('rt-ticket-reminder') || '{}');
+  if (saved.creatorId) $('#lookupForm [name="creatorId"]').value = saved.creatorId;
+} catch (err) {}
+</script>
 </body>
 </html>
