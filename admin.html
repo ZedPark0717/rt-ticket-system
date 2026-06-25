@@ -4,77 +4,159 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>RT Admin</title>
+<title>RT ADMIN</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-  * { box-sizing: border-box; }
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
 
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
-    background: #f4f6f8;
-  }
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;
+  background:#f4f6f8;
+}
 
-  .wrap {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 16px;
-  }
+.wrap{
+  max-width:1200px;
+  margin:auto;
+  padding:20px;
+}
 
-  header {
-    font-size: 22px;
-    font-weight: 800;
-    margin-bottom: 10px;
-  }
+header{
+  font-size:28px;
+  font-weight:800;
+  margin-bottom:20px;
+}
 
-  .filters {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
+.dashboard{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:20px;
+}
 
-  .filters button {
-    padding: 10px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 700;
-    background: #ddd;
-  }
+.chart-card{
+  background:white;
+  padding:16px;
+  border-radius:14px;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
 
-  .card {
-    background: #fff;
-    padding: 14px;
-    border-radius: 14px;
-    margin-bottom: 10px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-  }
+.chart-title{
+  font-weight:700;
+  margin-bottom:10px;
+}
 
-  .row {
-    display: flex;
-    justify-content: space-between;
-  }
+.toolbar{
+  display:flex;
+  gap:10px;
+  margin-bottom:15px;
+  flex-wrap:wrap;
+}
 
-  .title {
-    font-weight: 800;
-  }
+.toolbar input{
+  flex:1;
+  min-width:220px;
+  padding:10px;
+  border:1px solid #ddd;
+  border-radius:10px;
+}
 
-  .sub {
-    font-size: 12px;
-    color: #666;
-    margin-top: 6px;
-  }
+.filter-btn{
+  border:none;
+  background:#ddd;
+  padding:10px 14px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:700;
+}
 
-  .btn {
-    margin-top: 10px;
-    padding: 8px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-  }
+.filter-btn:hover{
+  background:#bbb;
+}
 
-  .del { background: #ff4d4f; color: white; }
+.ticket-list{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
 
+.card{
+  background:white;
+  border-radius:14px;
+  padding:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+
+.top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+
+.ticket-id{
+  font-size:18px;
+  font-weight:800;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:10px;
+  margin-bottom:12px;
+}
+
+.item{
+  font-size:14px;
+}
+
+.label{
+  color:#666;
+  font-size:12px;
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+select{
+  padding:8px;
+  border-radius:8px;
+}
+
+.btn{
+  border:none;
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.delete{
+  background:#ff4d4f;
+  color:white;
+}
+
+@media(max-width:768px){
+
+.dashboard{
+  grid-template-columns:1fr;
+}
+
+.top{
+  flex-direction:column;
+  align-items:flex-start;
+  gap:10px;
+}
+
+}
 </style>
 </head>
 
@@ -82,78 +164,295 @@
 
 <div class="wrap">
 
-  <header>RT ADMIN</header>
+<header>RT ADMIN</header>
 
-  <div class="filters">
-    <button onclick="loadTickets(0)">오늘</button>
-    <button onclick="loadTickets(1)">1일</button>
-    <button onclick="loadTickets(7)">7일</button>
-  </div>
+<div class="dashboard">
 
-  <div id="list"></div>
+<div class="chart-card">
+<div class="chart-title">Status 현황</div>
+<canvas id="statusChart"></canvas>
+</div>
+
+<div class="chart-card">
+<div class="chart-title">문제 유형 현황</div>
+<canvas id="categoryChart"></canvas>
+</div>
+
+</div>
+
+<div class="toolbar">
+
+<input
+id="search"
+placeholder="벌크라벨 / SKU / 티켓번호 검색"
+oninput="renderTickets()"
+/>
+
+<button class="filter-btn" onclick="changeDays(0)">오늘</button>
+<button class="filter-btn" onclick="changeDays(7)">7일</button>
+<button class="filter-btn" onclick="changeDays(30)">30일</button>
+<button class="filter-btn" onclick="changeDays(9999)">전체</button>
+
+</div>
+
+<div id="ticketList" class="ticket-list"></div>
 
 </div>
 
 <script>
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
+const SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
 
-async function loadTickets(days = 1) {
+let tickets = [];
+let currentDays = 7;
 
-  const res = await fetch(SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "list",
-      days: days
+let statusChart;
+let categoryChart;
+
+function changeDays(days){
+  currentDays = days;
+  loadTickets();
+}
+
+async function loadTickets(){
+
+  const res = await fetch(SCRIPT_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"list",
+      days:currentDays
     })
   });
 
-  const data = await res.json();
+  tickets = await res.json();
 
-  const box = document.getElementById("list");
+  tickets.sort((a,b)=>
+    new Date(b.date)-new Date(a.date)
+  );
+
+  drawCharts();
+  renderTickets();
+}
+
+function drawCharts(){
+
+  const statusCount = {};
+  const categoryCount = {};
+
+  tickets.forEach(t=>{
+
+    const s = t.status || "접수";
+    const c = t.category || "기타";
+
+    statusCount[s] =
+      (statusCount[s] || 0) + 1;
+
+    categoryCount[c] =
+      (categoryCount[c] || 0) + 1;
+  });
+
+  if(statusChart) statusChart.destroy();
+  if(categoryChart) categoryChart.destroy();
+
+  statusChart = new Chart(
+    document.getElementById("statusChart"),
+    {
+      type:"doughnut",
+      data:{
+        labels:Object.keys(statusCount),
+        datasets:[{
+          data:Object.values(statusCount)
+        }]
+      }
+    }
+  );
+
+  categoryChart = new Chart(
+    document.getElementById("categoryChart"),
+    {
+      type:"bar",
+      data:{
+        labels:Object.keys(categoryCount),
+        datasets:[{
+          label:"건수",
+          data:Object.values(categoryCount)
+        }]
+      }
+    }
+  );
+}
+
+function renderTickets(){
+
+  const keyword =
+    document
+    .getElementById("search")
+    .value
+    .toLowerCase();
+
+  const filtered = tickets.filter(t=>{
+
+    return (
+      (t.bulk_label || "")
+      .toLowerCase()
+      .includes(keyword)
+
+      ||
+
+      (t.sku || "")
+      .toLowerCase()
+      .includes(keyword)
+
+      ||
+
+      (t.ticketId || "")
+      .toLowerCase()
+      .includes(keyword)
+    );
+  });
+
+  const box =
+    document.getElementById("ticketList");
+
   box.innerHTML = "";
 
-  data.reverse().forEach(t => {
+  filtered.forEach(t=>{
 
     box.innerHTML += `
-      <div class="card">
 
-        <div class="row">
-          <div class="title">${t.bulk_label || "-"}</div>
-          <div>${t.status || "접수"}</div>
-        </div>
+    <div class="card">
 
-        <div class="sub">
-          ${t.category || "-"} | ${t.creator_id || "-"}<br>
+      <div class="top">
+
+        <div class="ticket-id">
           ${t.ticketId}
         </div>
 
-        <button class="btn del"
-          onclick="deleteTicket('${t.ticketId}')">
-          삭제
-        </button>
+        <div class="actions">
+
+          <select
+            onchange="updateStatus(
+              '${t.ticketId}',
+              this.value
+            )"
+          >
+
+            <option
+              ${t.status==="접수"?"selected":""}
+            >
+              접수
+            </option>
+
+            <option
+              ${t.status==="확인중"?"selected":""}
+            >
+              확인중
+            </option>
+
+            <option
+              ${t.status==="고객사 확인중"?"selected":""}
+            >
+              고객사 확인중
+            </option>
+
+            <option
+              ${t.status==="완료"?"selected":""}
+            >
+              완료
+            </option>
+
+          </select>
+
+          <button
+            class="btn delete"
+            onclick="deleteTicket(
+              '${t.ticketId}'
+            )"
+          >
+            삭제
+          </button>
+
+        </div>
 
       </div>
+
+      <div class="grid">
+
+        <div class="item">
+          <div class="label">벌크라벨</div>
+          ${t.bulk_label || "-"}
+        </div>
+
+        <div class="item">
+          <div class="label">SKU</div>
+          ${t.sku || "-"}
+        </div>
+
+        <div class="item">
+          <div class="label">카테고리</div>
+          ${t.category || "-"}
+        </div>
+
+        <div class="item">
+          <div class="label">작성자</div>
+          ${t.creator_id || "-"}
+        </div>
+
+        <div class="item">
+          <div class="label">작성일</div>
+          ${t.date || "-"}
+        </div>
+
+        <div class="item">
+          <div class="label">상태</div>
+          ${t.status || "접수"}
+        </div>
+
+      </div>
+
+      <div class="item">
+        <div class="label">코멘트</div>
+        ${t.comment || "-"}
+      </div>
+
+    </div>
+
     `;
   });
 }
 
-async function deleteTicket(id) {
+async function updateStatus(ticketId,status){
 
-  if (!confirm("삭제할까?")) return;
-
-  await fetch(SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "deleteTicket",
-      ticketId: id
+  await fetch(SCRIPT_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"updateStatus",
+      ticketId,
+      status
     })
   });
 
   loadTickets();
 }
 
-loadTickets(1);
+async function deleteTicket(ticketId){
+
+  if(!confirm("정말 삭제할까요?"))
+    return;
+
+  await fetch(SCRIPT_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"deleteTicket",
+      ticketId
+    })
+  });
+
+  loadTickets();
+}
+
+loadTickets();
 
 </script>
 
