@@ -2,519 +2,677 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>RT Ticket Admin</title>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    :root{
-      --navy:#071d3a;
-      --navy2:#0b2f5b;
-      --blue:#2f63e7;
-      --sky:#42b8d7;
-      --bg:#f3f7fb;
-      --card:#ffffff;
-      --line:#d9e3ef;
-      --text:#071426;
-      --muted:#68768a;
-      --danger:#ef4444;
-      --ok:#10a66a;
-      --warn:#f59e0b;
-      --purple:#7c3aed;
-      --shadow:0 18px 45px rgba(7,29,58,.10);
-      --r:8px;
+    :root {
+      --navy: #071d3a;
+      --navy-2: #0b2f5b;
+      --blue: #2f63e7;
+      --sky: #42b8d7;
+      --bg: #eef5fb;
+      --card: #ffffff;
+      --line: #d9e3ef;
+      --text: #071426;
+      --muted: #68768a;
+      --danger: #ef4444;
+      --ok: #10a66a;
+      --warn: #f59e0b;
+      --purple: #7c3aed;
+      --radius: 8px;
+      --shadow: 0 18px 45px rgba(7, 29, 58, .12);
     }
 
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:Arial,"Noto Sans KR",sans-serif;
-      background:linear-gradient(180deg,#edf5fb 0%,#f7f9fc 38%,#eef4fa 100%);
-      color:var(--text);
-      letter-spacing:0;
+    * {
+      box-sizing: border-box;
     }
-    button,input,select,textarea{font:inherit}
-    button{cursor:pointer;border:0}
-    a{color:inherit}
 
-    .login-page{
-      min-height:100vh;
-      display:grid;
-      place-items:center;
-      padding:28px;
+    body {
+      margin: 0;
+      font-family: Arial, "Noto Sans KR", sans-serif;
+      background: linear-gradient(180deg, #edf6fb 0%, #f7f9fc 52%, #edf4fa 100%);
+      color: var(--text);
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .login-page {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
       background:
-        radial-gradient(circle at 12% 18%,rgba(66,184,215,.28),transparent 34%),
-        linear-gradient(135deg,#061a34 0%,#0b2f5b 52%,#f4f8fc 52%,#f4f8fc 100%);
-    }
-    .login-card{
-      width:min(440px,100%);
-      background:#fff;
-      border:1px solid rgba(255,255,255,.5);
-      border-radius:14px;
-      box-shadow:var(--shadow);
-      padding:30px;
-    }
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:14px;
-      margin-bottom:26px;
-    }
-    .brand img{
-      width:148px;
-      height:auto;
-      display:block;
-    }
-    .brand-fallback{
-      font-weight:900;
-      font-size:30px;
-      color:#000;
-      letter-spacing:1px;
-    }
-    .login-title{
-      font-size:24px;
-      font-weight:900;
-      color:var(--navy);
-      margin:0 0 6px;
-    }
-    .login-sub{
-      margin:0 0 22px;
-      color:var(--muted);
-      font-size:14px;
-    }
-    .field{
-      display:grid;
-      gap:8px;
-      margin-bottom:14px;
-    }
-    label{
-      font-size:13px;
-      font-weight:800;
-      color:#10233f;
-    }
-    input,select,textarea{
-      width:100%;
-      border:1px solid var(--line);
-      border-radius:var(--r);
-      background:#fff;
-      color:var(--text);
-      padding:11px 12px;
-      outline:none;
-    }
-    input:focus,select:focus,textarea:focus{
-      border-color:var(--sky);
-      box-shadow:0 0 0 3px rgba(66,184,215,.16);
-    }
-    .primary{
-      background:var(--blue);
-      color:#fff;
-      border-radius:var(--r);
-      padding:11px 15px;
-      font-weight:900;
-    }
-    .ghost{
-      background:#e9f0f8;
-      color:#10233f;
-      border-radius:var(--r);
-      padding:10px 13px;
-      font-weight:800;
-    }
-    .danger{
-      background:#ffe8e8;
-      color:#c91818;
-      border-radius:var(--r);
-      padding:10px 13px;
-      font-weight:900;
-    }
-    .mini{
-      padding:8px 10px;
-      font-size:13px;
-      border-radius:7px;
-    }
-    .error{
-      display:none;
-      margin-top:12px;
-      color:#c91818;
-      font-weight:800;
-      font-size:13px;
+        radial-gradient(circle at 14% 18%, rgba(66, 184, 215, .26), transparent 32%),
+        linear-gradient(135deg, #061a34 0%, #0b2f5b 55%, #f4f8fc 55%, #f4f8fc 100%);
     }
 
-    .app{display:none;min-height:100vh}
-    .topbar{
-      position:sticky;
-      top:0;
-      z-index:10;
-      background:var(--navy);
-      color:#fff;
-      border-bottom:4px solid var(--sky);
-      box-shadow:0 10px 30px rgba(7,29,58,.18);
-    }
-    .top-inner{
-      max-width:1440px;
-      margin:0 auto;
-      padding:16px 22px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:18px;
-    }
-    .top-left{
-      display:flex;
-      align-items:center;
-      gap:16px;
-      min-width:0;
-    }
-    .top-left img{
-      width:150px;
-      height:auto;
-      background:#fff;
-      border-radius:6px;
-      padding:5px 8px;
-    }
-    .title-wrap h1{
-      margin:0;
-      font-size:20px;
-      font-weight:900;
-      white-space:nowrap;
-    }
-    .title-wrap p{
-      margin:3px 0 0;
-      color:#b9d9ee;
-      font-size:13px;
-    }
-    .tabs{
-      display:flex;
-      gap:8px;
-      align-items:center;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-    .tab{
-      background:rgba(255,255,255,.09);
-      color:#dbeafe;
-      padding:10px 13px;
-      border-radius:8px;
-      font-weight:900;
-    }
-    .tab.active{
-      background:#fff;
-      color:var(--navy);
+    .login-card {
+      width: min(450px, 100%);
+      background: #ffffff;
+      border: 1px solid rgba(255, 255, 255, .5);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 30px;
     }
 
-    .wrap{
-      max-width:1440px;
-      margin:0 auto;
-      padding:22px;
-    }
-    .view{display:none}
-    .view.active{display:block}
-
-    .kpis{
-      display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:14px;
-      margin-bottom:16px;
-    }
-    .kpi{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:var(--r);
-      padding:17px;
-      box-shadow:0 10px 30px rgba(7,29,58,.06);
-      position:relative;
-      overflow:hidden;
-    }
-    .kpi:before{
-      content:"";
-      position:absolute;
-      left:0;
-      top:0;
-      width:5px;
-      height:100%;
-      background:var(--sky);
-    }
-    .kpi b{
-      display:block;
-      font-size:13px;
-      color:var(--muted);
-      margin-bottom:9px;
-    }
-    .kpi strong{
-      font-size:30px;
-      color:var(--navy);
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
     }
 
-    .grid-2{
-      display:grid;
-      grid-template-columns:360px 1fr;
-      gap:16px;
-      margin-bottom:16px;
-    }
-    .panel{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:var(--r);
-      box-shadow:0 10px 30px rgba(7,29,58,.06);
-      padding:16px;
-      min-width:0;
-    }
-    .panel-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      margin-bottom:12px;
-    }
-    .panel h2{
-      margin:0;
-      font-size:16px;
-      color:var(--navy);
-    }
-    .chart-box{
-      height:260px;
-      position:relative;
+    .brand img {
+      width: 158px;
+      height: auto;
+      display: block;
+      background: #ffffff;
+      border-radius: 6px;
     }
 
-    .toolbar{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:var(--r);
-      box-shadow:0 10px 30px rgba(7,29,58,.06);
-      padding:14px;
-      margin-bottom:14px;
-    }
-    .quick{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-bottom:12px;
-    }
-    .filters{
-      display:grid;
-      grid-template-columns:1.2fr .9fr .9fr .9fr .9fr .9fr auto auto auto;
-      gap:10px;
-      align-items:end;
-    }
-    .filters .field{margin:0}
-    .date-row{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:8px;
+    .brand-fallback {
+      display: none;
+      font-size: 30px;
+      font-weight: 900;
+      color: #000000;
+      letter-spacing: 1px;
     }
 
-    .table-card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:var(--r);
-      box-shadow:0 10px 30px rgba(7,29,58,.06);
-      overflow:hidden;
-    }
-    .table-head{
-      padding:14px 16px;
-      border-bottom:1px solid var(--line);
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-    }
-    .table-head h2{
-      margin:0;
-      font-size:16px;
-      color:var(--navy);
-    }
-    .table-wrap{overflow:auto}
-    table{
-      width:100%;
-      border-collapse:collapse;
-      min-width:980px;
-    }
-    th,td{
-      padding:13px 14px;
-      border-bottom:1px solid var(--line);
-      text-align:left;
-      font-size:13px;
-      white-space:nowrap;
-      vertical-align:middle;
-    }
-    th{
-      background:#f2f6fb;
-      color:#10233f;
-      font-weight:900;
-    }
-    tbody tr:hover{background:#f8fbff}
-    .ticket-link{
-      color:#1f55e6;
-      font-weight:900;
-      background:transparent;
-      padding:0;
-    }
-    .clip{
-      max-width:220px;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-width:74px;
-      padding:6px 10px;
-      border-radius:999px;
-      font-weight:900;
-      font-size:12px;
-      white-space:nowrap;
-    }
-    .s-received{background:#fff1ca;color:#b06a00}
-    .s-checking{background:#e7f0ff;color:#245bd6}
-    .s-customer{background:#eee3ff;color:#6d28d9}
-    .s-done{background:#daf5e8;color:#08784f}
-    .remind{
-      background:#ffe3e8;
-      color:#d0163f;
-      border-radius:999px;
-      padding:6px 9px;
-      font-size:12px;
-      font-weight:900;
-    }
-    .empty{
-      padding:38px 18px;
-      text-align:center;
-      color:var(--muted);
-      font-weight:800;
+    .login-title {
+      margin: 0 0 6px;
+      font-size: 25px;
+      font-weight: 900;
+      color: var(--navy);
     }
 
-    .analytics-layout{
-      display:grid;
-      grid-template-columns:280px 1fr;
-      gap:16px;
-    }
-    .side{
-      background:var(--navy);
-      color:#fff;
-      border-radius:var(--r);
-      padding:16px;
-      box-shadow:var(--shadow);
-      align-self:start;
-      position:sticky;
-      top:92px;
-    }
-    .side h2{
-      margin:0 0 14px;
-      font-size:17px;
-    }
-    .side label{color:#cfe4f4}
-    .side input,.side select{
-      background:#0e3768;
-      border-color:#315a88;
-      color:#fff;
-    }
-    .side input::placeholder{color:#9db7d5}
-    .side .ghost{
-      background:#173f72;
-      color:#fff;
-    }
-    .analytics-main{
-      min-width:0;
-    }
-    .power-kpis{
-      display:grid;
-      grid-template-columns:repeat(5,1fr);
-      gap:12px;
-      margin-bottom:16px;
-    }
-    .power-card{
-      background:#fff;
-      border:1px solid var(--line);
-      border-radius:var(--r);
-      padding:16px;
-      box-shadow:0 10px 28px rgba(7,29,58,.06);
-    }
-    .power-card b{
-      display:block;
-      color:var(--muted);
-      font-size:12px;
-      margin-bottom:8px;
-    }
-    .power-card strong{
-      color:var(--navy);
-      font-size:27px;
-    }
-    .analytics-grid{
-      display:grid;
-      grid-template-columns:1.15fr .85fr;
-      gap:16px;
-      margin-bottom:16px;
-    }
-    .wide{grid-column:1 / -1}
-    .sku-table table{min-width:760px}
-
-    dialog{
-      border:0;
-      border-radius:14px;
-      padding:0;
-      width:min(760px,calc(100vw - 26px));
-      box-shadow:0 28px 80px rgba(0,0,0,.28);
-    }
-    dialog::backdrop{background:rgba(7,20,38,.48)}
-    .modal-head{
-      background:var(--navy);
-      color:#fff;
-      padding:18px 20px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-      border-bottom:4px solid var(--sky);
-    }
-    .modal-head h2{margin:0;font-size:18px}
-    .modal-body{padding:18px 20px}
-    .detail-grid{
-      display:grid;
-      grid-template-columns:140px 1fr;
-      border:1px solid var(--line);
-      border-radius:var(--r);
-      overflow:hidden;
-      margin-bottom:16px;
-    }
-    .detail-grid b,.detail-grid div{
-      padding:11px 12px;
-      border-bottom:1px solid var(--line);
-      font-size:13px;
-      min-width:0;
-      word-break:break-word;
-    }
-    .detail-grid b{
-      background:#f2f6fb;
-      color:#10233f;
-    }
-    .detail-grid b:last-of-type,.detail-grid div:last-child{border-bottom:0}
-    .modal-actions{
-      display:flex;
-      gap:10px;
-      justify-content:flex-end;
-      flex-wrap:wrap;
-    }
-    .status-edit{
-      display:grid;
-      grid-template-columns:1fr auto;
-      gap:10px;
-      margin-bottom:14px;
+    .login-sub {
+      margin: 0 0 22px;
+      color: var(--muted);
+      font-size: 14px;
     }
 
-    @media(max-width:1080px){
-      .kpis,.power-kpis{grid-template-columns:repeat(2,1fr)}
-      .grid-2,.analytics-layout,.analytics-grid{grid-template-columns:1fr}
-      .side{position:static}
-      .filters{grid-template-columns:1fr 1fr}
+    label {
+      font-size: 12px;
+      font-weight: 900;
+      color: #10233f;
     }
-    @media(max-width:640px){
-      .top-inner{align-items:flex-start;flex-direction:column}
-      .top-left img{width:132px}
-      .wrap{padding:14px}
-      .kpis,.power-kpis{grid-template-columns:1fr}
-      .filters{grid-template-columns:1fr}
-      .date-row{grid-template-columns:1fr}
-      .modal-actions,.status-edit{grid-template-columns:1fr}
-      .modal-actions button{width:100%}
+
+    .field {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 11px 12px;
+      color: var(--text);
+      background: #ffffff;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--sky);
+      box-shadow: 0 0 0 3px rgba(66, 184, 215, .16);
+    }
+
+    .primary {
+      background: var(--blue);
+      color: #ffffff;
+      border-radius: var(--radius);
+      padding: 11px 14px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .ghost {
+      background: #e9f0f8;
+      color: #10233f;
+      border-radius: var(--radius);
+      padding: 10px 13px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .danger {
+      background: #ffe8e8;
+      color: #c91818;
+      border-radius: var(--radius);
+      padding: 10px 13px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .error {
+      display: none;
+      margin-top: 12px;
+      color: #c91818;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .app {
+      display: none;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: var(--navy);
+      color: #ffffff;
+      border-bottom: 4px solid var(--sky);
+      box-shadow: 0 10px 30px rgba(7, 29, 58, .18);
+    }
+
+    .top-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 16px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      min-width: 0;
+    }
+
+    .top-left img {
+      width: 150px;
+      height: auto;
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 5px 8px;
+    }
+
+    .top-title h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .top-title p {
+      margin: 3px 0 0;
+      color: #b9d9ee;
+      font-size: 13px;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .top-tab {
+      background: rgba(255, 255, 255, .10);
+      color: #dbeafe;
+      border-radius: var(--radius);
+      padding: 10px 13px;
+      font-weight: 900;
+    }
+
+    .top-tab.active {
+      background: #ffffff;
+      color: var(--navy);
+    }
+
+    .wrap {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 13px;
+      margin-bottom: 15px;
+    }
+
+    .kpi {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--sky);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 10px 25px rgba(7, 29, 58, .06);
+    }
+
+    .kpi b {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .kpi strong {
+      font-size: 30px;
+      color: var(--navy);
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .panel,
+    .toolbar,
+    .table-card,
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 14px 36px rgba(7, 29, 58, .08);
+    }
+
+    .panel {
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .panel h2,
+    .card h2 {
+      margin: 0 0 12px;
+      color: var(--navy);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .chart {
+      height: 260px;
+      position: relative;
+    }
+
+    .toolbar {
+      padding: 14px;
+      margin-bottom: 15px;
+    }
+
+    .quick {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 1.25fr .85fr .85fr .85fr .85fr 1.25fr auto auto auto;
+      gap: 9px;
+      align-items: end;
+    }
+
+    .filters .field {
+      margin-bottom: 0;
+    }
+
+    .date-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+
+    .table-card {
+      overflow: hidden;
+    }
+
+    .table-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .table-head h2 {
+      font-size: 16px;
+      margin: 0;
+      color: var(--navy);
+      font-weight: 900;
+    }
+
+    .result-text {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .table-wrap {
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+
+    th,
+    td {
+      padding: 12px 13px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      text-align: left;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f2f6fb;
+      color: #10233f;
+      font-weight: 900;
+    }
+
+    tbody tr:hover {
+      background: #f8fbff;
+    }
+
+    .ticket-link {
+      background: transparent;
+      color: #1f55e6;
+      font-weight: 900;
+      padding: 0;
+      text-align: left;
+    }
+
+    .clip {
+      max-width: 230px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 96px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .s-received {
+      background: #fff1ca;
+      color: #b06a00;
+    }
+
+    .s-checking {
+      background: #e7f0ff;
+      color: #245bd6;
+    }
+
+    .s-customer {
+      background: #eee3ff;
+      color: #6d28d9;
+    }
+
+    .s-done {
+      background: #daf5e8;
+      color: #08784f;
+    }
+
+    .remind {
+      background: #ffe3e8;
+      color: #d0163f;
+      border-radius: 999px;
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .empty {
+      display: none;
+      padding: 34px 12px;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .analytics-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 15px;
+    }
+
+    .side {
+      background: var(--navy);
+      color: #ffffff;
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      align-self: start;
+      position: sticky;
+      top: 92px;
+    }
+
+    .side h2 {
+      margin: 0 0 14px;
+      font-size: 17px;
+    }
+
+    .side label {
+      color: #cfe4f4;
+    }
+
+    .side input,
+    .side select {
+      background: #0e3768;
+      border-color: #315a88;
+      color: #ffffff;
+    }
+
+    .side .ghost {
+      background: #173f72;
+      color: #ffffff;
+    }
+
+    .power-kpis {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    .power-card {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 15px;
+      box-shadow: 0 10px 25px rgba(7, 29, 58, .06);
+    }
+
+    .power-card b {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 7px;
+    }
+
+    .power-card strong {
+      font-size: 26px;
+      color: var(--navy);
+    }
+
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    dialog {
+      border: 0;
+      border-radius: 14px;
+      padding: 0;
+      width: min(760px, calc(100vw - 24px));
+      box-shadow: 0 28px 80px rgba(0, 0, 0, .28);
+    }
+
+    dialog::backdrop {
+      background: rgba(7, 20, 38, .48);
+    }
+
+    .modal-head {
+      background: var(--navy);
+      color: #ffffff;
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 4px solid var(--sky);
+    }
+
+    .modal-head h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .modal-body {
+      padding: 18px 20px;
+    }
+
+    .status-edit {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 15px;
+    }
+
+    .detail-grid b,
+    .detail-grid div {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .detail-grid b {
+      background: #f2f6fb;
+      color: #10233f;
+    }
+
+    .detail-grid b:last-of-type,
+    .detail-grid div:last-child {
+      border-bottom: 0;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 1120px) {
+      .kpis,
+      .power-kpis {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .charts,
+      .analytics-layout,
+      .analytics-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        position: static;
+      }
+
+      .filters {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .top-inner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .top-left img {
+        width: 132px;
+      }
+
+      .wrap {
+        padding: 14px;
+      }
+
+      .kpis,
+      .power-kpis,
+      .filters,
+      .date-pair,
+      .status-edit {
+        grid-template-columns: 1fr;
+      }
+
+      .top-actions,
+      .modal-actions {
+        width: 100%;
+      }
+
+      .top-actions button,
+      .modal-actions button,
+      .modal-actions a,
+      .filters button {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -523,9 +681,14 @@
   <section id="loginPage" class="login-page">
     <div class="login-card">
       <div class="brand">
-        <img src="assets/maersk-logo.png" alt="MAERSK" onerror="this.style.display='none';document.getElementById('loginBrandFallback').style.display='block';">
-        <div id="loginBrandFallback" class="brand-fallback" style="display:none;">MAERSK</div>
+        <img
+          src="assets/maersk-logo.png"
+          alt="MAERSK"
+          onerror="this.style.display='none';document.getElementById('loginBrandFallback').style.display='block';"
+        />
+        <div id="loginBrandFallback" class="brand-fallback">MAERSK</div>
       </div>
+
       <h1 class="login-title">RT Ticket Admin</h1>
       <p class="login-sub">관리자 계정으로 로그인하세요.</p>
 
@@ -534,12 +697,14 @@
           <label for="loginId">ID</label>
           <input id="loginId" autocomplete="username" required />
         </div>
+
         <div class="field">
           <label for="loginPw">Password</label>
           <input id="loginPw" type="password" autocomplete="current-password" required />
         </div>
+
         <button class="primary" type="submit" style="width:100%;">로그인</button>
-        <div id="loginError" class="error">아이디 또는 비밀번호를 확인해주세요.</div>
+        <div id="loginError" class="error"></div>
       </form>
     </div>
   </section>
@@ -548,16 +713,21 @@
     <header class="topbar">
       <div class="top-inner">
         <div class="top-left">
-          <img src="assets/maersk-logo.png" alt="MAERSK" onerror="this.outerHTML='<strong style=&quot;font-size:26px;&quot;>MAERSK</strong>';">
-          <div class="title-wrap">
+          <img
+            src="assets/maersk-logo.png"
+            alt="MAERSK"
+            onerror="this.outerHTML='<strong style=&quot;font-size:26px;&quot;>MAERSK</strong>';"
+          />
+          <div class="top-title">
             <h1>RT Ticket Admin</h1>
-            <p>Ticket operations and SKU analytics</p>
+            <p>Operations and analytics</p>
           </div>
         </div>
-        <div class="tabs">
-          <button class="tab active" data-tab="operations">Operations</button>
-          <button class="tab" data-tab="analytics">Analytics</button>
-          <button id="logoutBtn" class="tab">Logout</button>
+
+        <div class="top-actions">
+          <button class="top-tab active" data-tab="operations">Operations</button>
+          <button class="top-tab" data-tab="analytics">Analytics</button>
+          <button id="logoutBtn" class="top-tab">Logout</button>
         </div>
       </div>
     </header>
@@ -565,55 +735,75 @@
     <main class="wrap">
       <section id="operations" class="view active">
         <div class="kpis">
-          <div class="kpi"><b>전체 티켓</b><strong id="kpiTotal">0</strong></div>
-          <div class="kpi"><b>접수</b><strong id="kpiReceived">0</strong></div>
-          <div class="kpi"><b>내용 확인 중</b><strong id="kpiChecking">0</strong></div>
-          <div class="kpi"><b>완료</b><strong id="kpiDone">0</strong></div>
+          <div class="kpi">
+            <b>전체 티켓</b>
+            <strong id="kpiTotal">0</strong>
+          </div>
+
+          <div class="kpi">
+            <b>접수</b>
+            <strong id="kpiReceived">0</strong>
+          </div>
+
+          <div class="kpi">
+            <b>내용 확인 중</b>
+            <strong id="kpiChecking">0</strong>
+          </div>
+
+          <div class="kpi">
+            <b>완료</b>
+            <strong id="kpiDone">0</strong>
+          </div>
         </div>
 
-        <div class="grid-2">
+        <div class="charts">
           <div class="panel">
-            <div class="panel-head">
-              <h2>Status Overview</h2>
+            <h2>Status Overview</h2>
+            <div class="chart">
+              <canvas id="statusChart"></canvas>
             </div>
-            <div class="chart-box"><canvas id="statusChart"></canvas></div>
           </div>
+
           <div class="panel">
-            <div class="panel-head">
-              <h2>Category Volume</h2>
+            <h2>Category Volume</h2>
+            <div class="chart">
+              <canvas id="categoryChart"></canvas>
             </div>
-            <div class="chart-box"><canvas id="categoryChart"></canvas></div>
           </div>
         </div>
 
         <div class="toolbar">
           <div class="quick">
-            <button class="ghost mini" id="opTodayBtn">오늘</button>
-            <button class="ghost mini" id="opSevenBtn">7일</button>
-            <button class="ghost mini" id="opThirtyBtn">30일</button>
-            <button class="ghost mini" id="opClearBtn">전체</button>
+            <button id="todayBtn" class="ghost" type="button">오늘</button>
+            <button id="sevenBtn" class="ghost" type="button">7일</button>
+            <button id="thirtyBtn" class="ghost" type="button">30일</button>
+            <button id="allDateBtn" class="ghost" type="button">전체</button>
           </div>
 
           <div class="filters">
             <div class="field">
-              <label for="opKeyword">검색</label>
-              <input id="opKeyword" placeholder="Ticket ID, SKU, 코멘트" />
+              <label for="keyword">검색</label>
+              <input id="keyword" placeholder="Ticket ID, SKU, 코멘트" />
             </div>
+
             <div class="field">
-              <label for="opBulk">Bulk Label</label>
-              <input id="opBulk" placeholder="벌크라벨" />
+              <label for="bulkLabel">Bulk Label</label>
+              <input id="bulkLabel" placeholder="벌크라벨" />
             </div>
+
             <div class="field">
-              <label for="opTicket">Ticket ID</label>
-              <input id="opTicket" placeholder="RT-yyyymmdd-01" />
+              <label for="ticketId">Ticket ID</label>
+              <input id="ticketId" placeholder="RT-yyyymmdd-01" />
             </div>
+
             <div class="field">
-              <label for="opCreator">작업자 ID</label>
-              <input id="opCreator" placeholder="작업자" />
+              <label for="creatorId">작업자 ID</label>
+              <input id="creatorId" placeholder="작업자" />
             </div>
+
             <div class="field">
-              <label for="opStatus">Status</label>
-              <select id="opStatus">
+              <label for="status">Status</label>
+              <select id="status">
                 <option value="">전체</option>
                 <option>접수</option>
                 <option>내용 확인 중</option>
@@ -621,24 +811,27 @@
                 <option>완료</option>
               </select>
             </div>
+
             <div class="field">
               <label>날짜</label>
-              <div class="date-row">
-                <input id="opDateFrom" type="date" />
-                <input id="opDateTo" type="date" />
+              <div class="date-pair">
+                <input id="dateFrom" type="date" />
+                <input id="dateTo" type="date" />
               </div>
             </div>
-            <button class="primary" id="opSearchBtn">조회</button>
-            <button class="ghost" id="ticketCsvBtn">Tickets CSV</button>
-            <button class="ghost" id="skuCsvBtn">SKU CSV</button>
+
+            <button id="searchBtn" class="primary" type="button">조회</button>
+            <button id="ticketsCsvBtn" class="ghost" type="button">Tickets CSV</button>
+            <button id="skuCsvBtn" class="ghost" type="button">SKU CSV</button>
           </div>
         </div>
 
         <div class="table-card">
           <div class="table-head">
             <h2>Ticket List</h2>
-            <span id="resultText" style="color:var(--muted);font-weight:800;font-size:13px;">0건</span>
+            <span id="resultText" class="result-text">0건</span>
           </div>
+
           <div class="table-wrap">
             <table>
               <thead>
@@ -656,7 +849,8 @@
               <tbody id="ticketBody"></tbody>
             </table>
           </div>
-          <div id="emptyBox" class="empty" style="display:none;">조회된 티켓이 없습니다.</div>
+
+          <div id="emptyTickets" class="empty">조회된 티켓이 없습니다.</div>
         </div>
       </section>
 
@@ -664,17 +858,20 @@
         <div class="analytics-layout">
           <aside class="side">
             <h2>Analytics Filter</h2>
+
             <div class="field">
-              <label for="anDateFrom">From</label>
-              <input id="anDateFrom" type="date" />
+              <label for="analyticsDateFrom">From</label>
+              <input id="analyticsDateFrom" type="date" />
             </div>
+
             <div class="field">
-              <label for="anDateTo">To</label>
-              <input id="anDateTo" type="date" />
+              <label for="analyticsDateTo">To</label>
+              <input id="analyticsDateTo" type="date" />
             </div>
+
             <div class="field">
-              <label for="anCategory">Category</label>
-              <select id="anCategory">
+              <label for="analyticsCategory">Category</label>
+              <select id="analyticsCategory">
                 <option value="">전체</option>
                 <option>RCP 오류</option>
                 <option>RFID 오류</option>
@@ -683,9 +880,10 @@
                 <option>기타 문제</option>
               </select>
             </div>
+
             <div class="field">
-              <label for="anStatus">Status</label>
-              <select id="anStatus">
+              <label for="analyticsStatus">Status</label>
+              <select id="analyticsStatus">
                 <option value="">전체</option>
                 <option>접수</option>
                 <option>내용 확인 중</option>
@@ -693,52 +891,85 @@
                 <option>완료</option>
               </select>
             </div>
+
             <div class="field">
-              <label for="anKeyword">Keyword</label>
-              <input id="anKeyword" placeholder="Ticket, SKU, Bulk" />
+              <label for="analyticsKeyword">Keyword</label>
+              <input id="analyticsKeyword" placeholder="Ticket, SKU, Bulk" />
             </div>
+
             <div style="display:grid;gap:8px;margin-top:14px;">
-              <button class="primary" id="anApplyBtn">조회</button>
-              <button class="ghost" id="anTodayBtn">오늘</button>
-              <button class="ghost" id="anClearBtn">전체</button>
-              <button class="ghost" id="analyticsCsvBtn">Analytics CSV</button>
-              <button class="ghost" id="analyticsSkuCsvBtn">SKU CSV</button>
+              <button id="analyticsSearchBtn" class="primary" type="button">조회</button>
+              <button id="analyticsTodayBtn" class="ghost" type="button">오늘</button>
+              <button id="analyticsAllBtn" class="ghost" type="button">전체</button>
+              <button id="analyticsCsvBtn" class="ghost" type="button">Analytics CSV</button>
+              <button id="analyticsSkuCsvBtn" class="ghost" type="button">SKU CSV</button>
             </div>
           </aside>
 
-          <div class="analytics-main">
+          <div>
             <div class="power-kpis">
-              <div class="power-card"><b>Total Tickets</b><strong id="anTotalTickets">0</strong></div>
-              <div class="power-card"><b>Total SKU</b><strong id="anTotalSku">0</strong></div>
-              <div class="power-card"><b>Bulk Labels</b><strong id="anBulkCount">0</strong></div>
-              <div class="power-card"><b>Reminder</b><strong id="anReminderCount">0</strong></div>
-              <div class="power-card"><b>Completion</b><strong id="anCompleteRate">0%</strong></div>
+              <div class="power-card">
+                <b>Total Tickets</b>
+                <strong id="analyticsTotalTickets">0</strong>
+              </div>
+
+              <div class="power-card">
+                <b>Total SKU</b>
+                <strong id="analyticsTotalSku">0</strong>
+              </div>
+
+              <div class="power-card">
+                <b>Bulk Labels</b>
+                <strong id="analyticsBulkCount">0</strong>
+              </div>
+
+              <div class="power-card">
+                <b>Reminder</b>
+                <strong id="analyticsReminderCount">0</strong>
+              </div>
+
+              <div class="power-card">
+                <b>Completion</b>
+                <strong id="analyticsCompleteRate">0%</strong>
+              </div>
             </div>
 
             <div class="analytics-grid">
               <div class="panel">
-                <div class="panel-head"><h2>Daily Ticket Trend</h2></div>
-                <div class="chart-box"><canvas id="dailyChart"></canvas></div>
+                <h2>Daily Ticket Trend</h2>
+                <div class="chart">
+                  <canvas id="dailyChart"></canvas>
+                </div>
               </div>
+
               <div class="panel">
-                <div class="panel-head"><h2>Status Mix</h2></div>
-                <div class="chart-box"><canvas id="anStatusChart"></canvas></div>
+                <h2>Status Mix</h2>
+                <div class="chart">
+                  <canvas id="analyticsStatusChart"></canvas>
+                </div>
               </div>
+
               <div class="panel">
-                <div class="panel-head"><h2>SKU Volume by Category</h2></div>
-                <div class="chart-box"><canvas id="skuCategoryChart"></canvas></div>
+                <h2>SKU Volume by Category</h2>
+                <div class="chart">
+                  <canvas id="skuCategoryChart"></canvas>
+                </div>
               </div>
+
               <div class="panel">
-                <div class="panel-head"><h2>Top Bulk Labels</h2></div>
-                <div class="chart-box"><canvas id="bulkChart"></canvas></div>
+                <h2>Top Bulk Labels</h2>
+                <div class="chart">
+                  <canvas id="bulkChart"></canvas>
+                </div>
               </div>
             </div>
 
-            <div class="table-card sku-table">
+            <div class="table-card">
               <div class="table-head">
                 <h2>SKU Detail</h2>
-                <span id="skuResultText" style="color:var(--muted);font-weight:800;font-size:13px;">0건</span>
+                <span id="skuResultText" class="result-text">0건</span>
               </div>
+
               <div class="table-wrap">
                 <table>
                   <thead>
@@ -755,7 +986,8 @@
                   <tbody id="skuBody"></tbody>
                 </table>
               </div>
-              <div id="skuEmptyBox" class="empty" style="display:none;">조회된 SKU 데이터가 없습니다.</div>
+
+              <div id="emptySku" class="empty">조회된 SKU 데이터가 없습니다.</div>
             </div>
           </div>
         </div>
@@ -766,8 +998,9 @@
   <dialog id="detailDialog">
     <div class="modal-head">
       <h2 id="detailTitle">Ticket Detail</h2>
-      <button class="ghost mini" onclick="detailDialog.close()">닫기</button>
+      <button class="ghost" type="button" onclick="detailDialog.close()">닫기</button>
     </div>
+
     <div class="modal-body">
       <div class="status-edit">
         <select id="detailStatus">
@@ -776,14 +1009,15 @@
           <option>고객사 확인 중</option>
           <option>완료</option>
         </select>
-        <button class="primary" id="detailStatusBtn">상태 변경</button>
+
+        <button id="statusUpdateBtn" class="primary" type="button">상태 변경</button>
       </div>
 
-      <div class="detail-grid" id="detailGrid"></div>
+      <div id="detailGrid" class="detail-grid"></div>
 
       <div class="modal-actions">
-        <a id="detailPhoto" class="ghost" href="#" target="_blank" rel="noopener">사진 폴더 열기</a>
-        <button class="danger" id="detailDeleteBtn">삭제</button>
+        <a id="photoLink" class="ghost" href="#" target="_blank" rel="noopener">사진 폴더 열기</a>
+        <button id="deleteBtn" class="danger" type="button">삭제</button>
       </div>
     </div>
   </dialog>
@@ -791,651 +1025,713 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
     const TOKEN_KEY = "rt_admin_auth_token";
-    const USER_KEY = "rt_admin_auth_user";
 
-    const STATUSES = ["접수", "내용 확인 중", "고객사 확인 중", "완료"];
-    const STATUS_CLASS = {
-      "접수":"s-received",
-      "내용 확인 중":"s-checking",
-      "고객사 확인 중":"s-customer",
-      "완료":"s-done"
-    };
-    const COLORS = ["#42b8d7","#2f63e7","#7c3aed","#10a66a","#f59e0b","#ef4444","#0b2f5b"];
+    const COLORS = [
+      "#42b8d7",
+      "#2f63e7",
+      "#7c3aed",
+      "#10a66a",
+      "#f59e0b",
+      "#ef4444",
+      "#0b2f5b"
+    ];
 
-    let allTickets = [];
-    let filteredTickets = [];
+    let tickets = [];
     let skuItems = [];
     let currentTicket = null;
     let charts = {};
 
     const $ = id => document.getElementById(id);
 
-    function todayString(){
-      const d = new Date();
-      const y = d.getFullYear();
-      const m = String(d.getMonth()+1).padStart(2,"0");
-      const day = String(d.getDate()).padStart(2,"0");
-      return `${y}-${m}-${day}`;
-    }
-
-    function addDays(base, days){
-      const d = new Date(base);
-      d.setDate(d.getDate()+days);
-      const y = d.getFullYear();
-      const m = String(d.getMonth()+1).padStart(2,"0");
-      const day = String(d.getDate()).padStart(2,"0");
-      return `${y}-${m}-${day}`;
-    }
-
-    function normalize(v){
-      return String(v || "").trim();
-    }
-
-    function statusPill(status){
-      const s = normalize(status) || "접수";
-      return `<span class="pill ${STATUS_CLASS[s] || "s-received"}">${escapeHtml(s)}</span>`;
-    }
-
-    function escapeHtml(value){
+    function escapeHtml(value) {
       return String(value ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
 
-    async function api(action, payload = {}){
+    function todayString() {
+      const date = new Date();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function addDays(days) {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function setDefaultDates() {
+      const today = todayString();
+
+      $("dateFrom").value = today;
+      $("dateTo").value = today;
+      $("analyticsDateFrom").value = today;
+      $("analyticsDateTo").value = today;
+    }
+
+    function statusPill(status) {
+      const safe = status || "접수";
+
+      const className = {
+        "접수": "s-received",
+        "내용 확인 중": "s-checking",
+        "고객사 확인 중": "s-customer",
+        "완료": "s-done"
+      }[safe] || "s-received";
+
+      return `<span class="pill ${className}">${escapeHtml(safe)}</span>`;
+    }
+
+    async function api(action, payload = {}) {
       const token = localStorage.getItem(TOKEN_KEY) || "";
-      const body = { action, token, ...payload };
 
       const res = await fetch(API_URL, {
-        method:"POST",
-        headers:{ "Content-Type":"text/plain;charset=utf-8" },
-        body:JSON.stringify(body)
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify({
+          action,
+          token,
+          ...payload
+        })
       });
 
       const text = await res.text();
       let data;
-      try{
+
+      try {
         data = JSON.parse(text);
-      }catch(e){
-        throw new Error("API 응답을 읽을 수 없습니다.");
+      } catch (err) {
+        throw new Error("서버 응답을 읽을 수 없습니다. Apps Script 새 버전 배포를 확인해주세요.");
       }
 
-      if(!data.ok){
-        throw new Error(data.message || data.error || "요청 실패");
+      if (!data.ok) {
+        const message =
+          typeof data.message === "string" ? data.message :
+          typeof data.error === "string" ? data.error :
+          JSON.stringify(data.message || data.error || data);
+
+        throw new Error(message);
       }
+
       return data;
     }
 
-    function showLogin(){
+    function showLogin() {
       $("loginPage").style.display = "grid";
       $("app").style.display = "none";
     }
 
-    function showApp(){
+    function showApp() {
       $("loginPage").style.display = "none";
       $("app").style.display = "block";
     }
 
-    async function initAuth(){
-      const token = localStorage.getItem(TOKEN_KEY);
-      if(!token){
-        showLogin();
-        return;
-      }
+    $("loginForm").addEventListener("submit", async event => {
+      event.preventDefault();
 
-      try{
-        const data = await api("validateToken", {});
-        if(data.role !== "admin") throw new Error("관리자 권한이 아닙니다.");
-        showApp();
-        setDefaultDates();
-        await loadTickets();
-        await loadAnalytics();
-      }catch(e){
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
-        showLogin();
-      }
-    }
-
-    $("loginForm").addEventListener("submit", async e => {
-      e.preventDefault();
       $("loginError").style.display = "none";
 
-      try{
+      try {
         const data = await api("login", {
-          id:$("loginId").value.trim(),
-          password:$("loginPw").value,
-          requiredRole:"admin"
+          id: $("loginId").value.trim(),
+          password: $("loginPw").value,
+          requiredRole: "admin"
         });
 
-        if(data.role !== "admin"){
-          throw new Error("관리자 권한이 아닙니다.");
+        if (data.role !== "admin") {
+          throw new Error("관리자 권한이 없습니다.");
         }
 
         localStorage.setItem(TOKEN_KEY, data.token);
-        localStorage.setItem(USER_KEY, JSON.stringify(data.user || {}));
+
         showApp();
         setDefaultDates();
+
         await loadTickets();
         await loadAnalytics();
-      }catch(err){
-        $("loginError").textContent = err.message || "아이디 또는 비밀번호를 확인해주세요.";
+      } catch (err) {
+        $("loginError").textContent = err.message || "로그인 실패";
         $("loginError").style.display = "block";
       }
     });
 
     $("logoutBtn").addEventListener("click", async () => {
-      try{ await api("logout", {}); }catch(e){}
+      try {
+        await api("logout");
+      } catch (err) {}
+
       localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
       showLogin();
     });
 
-    document.querySelectorAll(".tab[data-tab]").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        document.querySelectorAll(".tab[data-tab]").forEach(b => b.classList.remove("active"));
-        document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-        btn.classList.add("active");
-        $(btn.dataset.tab).classList.add("active");
+    document.querySelectorAll(".top-tab[data-tab]").forEach(button => {
+      button.addEventListener("click", async () => {
+        document.querySelectorAll(".top-tab[data-tab]").forEach(item => item.classList.remove("active"));
+        document.querySelectorAll(".view").forEach(item => item.classList.remove("active"));
 
-        if(btn.dataset.tab === "analytics"){
+        button.classList.add("active");
+        $(button.dataset.tab).classList.add("active");
+
+        if (button.dataset.tab === "analytics") {
           await loadAnalytics();
         }
       });
     });
 
-    function setDefaultDates(){
-      const today = todayString();
-      $("opDateFrom").value = today;
-      $("opDateTo").value = today;
-      $("anDateFrom").value = today;
-      $("anDateTo").value = today;
-    }
-
-    function operationServerFilters(){
+    function operationFilters() {
       return {
-        keyword:$("opKeyword").value.trim(),
-        bulkLabel:$("opBulk").value.trim(),
-        ticketId:$("opTicket").value.trim(),
-        creatorId:$("opCreator").value.trim(),
-        status:$("opStatus").value,
-        dateFrom:$("opDateFrom").value,
-        dateTo:$("opDateTo").value
+        keyword: $("keyword").value.trim(),
+        bulkLabel: $("bulkLabel").value.trim(),
+        ticketId: $("ticketId").value.trim(),
+        creatorId: $("creatorId").value.trim(),
+        status: $("status").value,
+        dateFrom: $("dateFrom").value,
+        dateTo: $("dateTo").value
       };
     }
 
-    function analyticsServerFilters(){
+    function analyticsFilters() {
       return {
-        keyword:$("anKeyword").value.trim(),
-        category:$("anCategory").value,
-        status:$("anStatus").value,
-        dateFrom:$("anDateFrom").value,
-        dateTo:$("anDateTo").value
+        keyword: $("analyticsKeyword").value.trim(),
+        category: $("analyticsCategory").value,
+        status: $("analyticsStatus").value,
+        dateFrom: $("analyticsDateFrom").value,
+        dateTo: $("analyticsDateTo").value
       };
     }
 
-    async function loadTickets(){
+    async function loadTickets() {
       $("ticketBody").innerHTML = `<tr><td colspan="8">조회 중...</td></tr>`;
-      $("emptyBox").style.display = "none";
+      $("emptyTickets").style.display = "none";
 
-      try{
-        const data = await api("list", operationServerFilters());
-        allTickets = Array.isArray(data.tickets) ? data.tickets : [];
-        filteredTickets = allTickets;
+      try {
+        const data = await api("list", operationFilters());
+
+        tickets = Array.isArray(data.tickets) ? data.tickets : [];
+
         renderTickets();
-        renderOperationDashboard();
-      }catch(e){
-        $("ticketBody").innerHTML = `<tr><td colspan="8">${escapeHtml(e.message)}</td></tr>`;
+        renderOperationsDashboard();
+      } catch (err) {
+        $("ticketBody").innerHTML = `<tr><td colspan="8">${escapeHtml(err.message)}</td></tr>`;
       }
     }
 
-    function renderTickets(){
-      $("resultText").textContent = `${filteredTickets.length}건`;
+    function renderTickets() {
+      $("resultText").textContent = `${tickets.length}건`;
       $("ticketBody").innerHTML = "";
 
-      if(!filteredTickets.length){
-        $("emptyBox").style.display = "block";
+      if (!tickets.length) {
+        $("emptyTickets").style.display = "block";
         return;
       }
 
-      $("emptyBox").style.display = "none";
+      $("emptyTickets").style.display = "none";
 
-      const html = filteredTickets.map(t => {
-        const id = normalize(t.ticketId || t["Ticket ID"]);
-        const reminded = String(t.reminded || t.reminder || "").toUpperCase() === "Y" || String(t.history || "").includes("[리마인드]");
+      $("ticketBody").innerHTML = tickets.map(ticket => {
+        const reminded = String(ticket.history || "").includes("[리마인드]");
+
         return `
           <tr>
-            <td><button class="ticket-link" data-id="${escapeHtml(id)}">${escapeHtml(id)}</button></td>
-            <td>${escapeHtml(t.date || t.Date || "")}</td>
-            <td>${escapeHtml(t.category || t.Category || "")}</td>
-            <td class="clip">${escapeHtml(t.bulkLabel || t["Bulk Label"] || "")}</td>
-            <td class="clip">${escapeHtml(t.sku || t.SKU || "")}</td>
-            <td>${escapeHtml(t.creatorId || t["Creator ID"] || "")}</td>
-            <td>${statusPill(t.status || t.Status)}</td>
+            <td>
+              <button class="ticket-link" type="button" data-id="${escapeHtml(ticket.ticketId)}">
+                ${escapeHtml(ticket.ticketId)}
+              </button>
+            </td>
+            <td>${escapeHtml(ticket.date)}</td>
+            <td>${escapeHtml(ticket.category || "미분류")}</td>
+            <td class="clip">${escapeHtml(ticket.bulkLabel)}</td>
+            <td class="clip">${escapeHtml(ticket.sku)}</td>
+            <td>${escapeHtml(ticket.creatorId)}</td>
+            <td>${statusPill(ticket.status)}</td>
             <td>${reminded ? `<span class="remind">리마인드</span>` : ""}</td>
           </tr>
         `;
       }).join("");
 
-      $("ticketBody").innerHTML = html;
-
-      document.querySelectorAll(".ticket-link").forEach(btn => {
-        btn.addEventListener("click", () => openDetail(btn.dataset.id));
+      document.querySelectorAll(".ticket-link").forEach(button => {
+        button.addEventListener("click", () => openDetail(button.dataset.id));
       });
     }
 
-    function renderOperationDashboard(){
-      const total = filteredTickets.length;
-      const byStatus = countBy(filteredTickets, t => normalize(t.status || t.Status) || "접수");
-      const byCategory = countBy(filteredTickets, t => normalize(t.category || t.Category) || "미분류");
+    function renderOperationsDashboard() {
+      const statusCounts = countBy(tickets, ticket => ticket.status || "접수");
+      const categoryCounts = countBy(tickets, ticket => ticket.category || "미분류");
 
-      $("kpiTotal").textContent = total;
-      $("kpiReceived").textContent = byStatus["접수"] || 0;
-      $("kpiChecking").textContent = byStatus["내용 확인 중"] || 0;
-      $("kpiDone").textContent = byStatus["완료"] || 0;
+      $("kpiTotal").textContent = tickets.length;
+      $("kpiReceived").textContent = statusCounts["접수"] || 0;
+      $("kpiChecking").textContent = statusCounts["내용 확인 중"] || 0;
+      $("kpiDone").textContent = statusCounts["완료"] || 0;
 
-      drawDoughnut("statusChart", Object.keys(byStatus), Object.values(byStatus));
-      drawBar("categoryChart", Object.keys(byCategory), Object.values(byCategory));
+      drawChart("statusChart", "doughnut", Object.keys(statusCounts), Object.values(statusCounts));
+      drawChart("categoryChart", "bar", Object.keys(categoryCounts), Object.values(categoryCounts));
     }
 
-    function countBy(rows, getter){
-      return rows.reduce((acc,row) => {
-        const key = normalize(getter(row)) || "미분류";
+    function countBy(rows, getter) {
+      return rows.reduce((acc, row) => {
+        const key = getter(row) || "미분류";
         acc[key] = (acc[key] || 0) + 1;
         return acc;
       }, {});
     }
 
-    function drawDoughnut(id, labels, values){
-      destroyChart(id);
-      charts[id] = new Chart($(id), {
-        type:"doughnut",
-        data:{
-          labels,
-          datasets:[{
-            data:values,
-            backgroundColor:COLORS,
-            borderWidth:0
-          }]
-        },
-        options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          cutout:"64%",
-          plugins:{legend:{position:"bottom"}}
-        }
-      });
-    }
-
-    function drawBar(id, labels, values){
-      destroyChart(id);
-      charts[id] = new Chart($(id), {
-        type:"bar",
-        data:{
-          labels,
-          datasets:[{
-            data:values,
-            backgroundColor:"#42b8d7",
-            borderRadius:7
-          }]
-        },
-        options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          plugins:{legend:{display:false}},
-          scales:{
-            x:{grid:{display:false}},
-            y:{beginAtZero:true,ticks:{precision:0}}
-          }
-        }
-      });
-    }
-
-    function drawLine(id, labels, values){
-      destroyChart(id);
-      charts[id] = new Chart($(id), {
-        type:"line",
-        data:{
-          labels,
-          datasets:[{
-            data:values,
-            borderColor:"#2f63e7",
-            backgroundColor:"rgba(66,184,215,.18)",
-            fill:true,
-            tension:.35,
-            pointRadius:4,
-            pointBackgroundColor:"#2f63e7"
-          }]
-        },
-        options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          plugins:{legend:{display:false}},
-          scales:{
-            x:{grid:{display:false}},
-            y:{beginAtZero:true,ticks:{precision:0}}
-          }
-        }
-      });
-    }
-
-    function destroyChart(id){
-      if(charts[id]){
+    function drawChart(id, type, labels, data) {
+      if (charts[id]) {
         charts[id].destroy();
-        delete charts[id];
       }
+
+      const isDoughnut = type === "doughnut";
+      const isLine = type === "line";
+
+      charts[id] = new Chart($(id), {
+        type,
+        data: {
+          labels,
+          datasets: [{
+            data,
+            backgroundColor: isLine ? "rgba(66,184,215,.18)" : COLORS,
+            borderColor: isLine ? "#2f63e7" : "#ffffff",
+            borderWidth: isDoughnut ? 0 : 2,
+            borderRadius: isDoughnut ? 0 : 7,
+            fill: isLine,
+            tension: .35,
+            pointRadius: isLine ? 4 : 0,
+            pointBackgroundColor: "#2f63e7"
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: isDoughnut,
+              position: "bottom"
+            }
+          },
+          scales: isDoughnut ? {} : {
+            x: {
+              grid: {
+                display: false
+              }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0
+              }
+            }
+          }
+        }
+      });
     }
 
-    function openDetail(ticketId){
-      currentTicket = filteredTickets.find(t => normalize(t.ticketId || t["Ticket ID"]) === ticketId);
-      if(!currentTicket) return;
+    function openDetail(ticketId) {
+      currentTicket = tickets.find(ticket => ticket.ticketId === ticketId);
 
-      const t = currentTicket;
-      const id = normalize(t.ticketId || t["Ticket ID"]);
-      $("detailTitle").textContent = id;
-      $("detailStatus").value = normalize(t.status || t.Status) || "접수";
+      if (!currentTicket) {
+        return;
+      }
+
+      $("detailTitle").textContent = currentTicket.ticketId;
+      $("detailStatus").value = currentTicket.status || "접수";
 
       const rows = [
-        ["Ticket ID", id],
-        ["Date", t.date || t.Date || ""],
-        ["Category", t.category || t.Category || ""],
-        ["Bulk Label", t.bulkLabel || t["Bulk Label"] || ""],
-        ["SKU", t.sku || t.SKU || ""],
-        ["작업자", t.creatorId || t["Creator ID"] || ""],
-        ["Status", t.status || t.Status || ""],
-        ["Comment", t.comment || t.Comment || ""],
-        ["History", t.history || t.History || ""]
+        ["Ticket ID", currentTicket.ticketId],
+        ["Date", currentTicket.date],
+        ["Category", currentTicket.category],
+        ["Bulk Label", currentTicket.bulkLabel],
+        ["SKU", currentTicket.sku],
+        ["작업자", currentTicket.creatorId],
+        ["Status", currentTicket.status],
+        ["Comment", currentTicket.comment],
+        ["History", currentTicket.history]
       ];
 
-      $("detailGrid").innerHTML = rows.map(([k,v]) => `
-        <b>${escapeHtml(k)}</b>
-        <div>${escapeHtml(v).replaceAll("\n","<br>")}</div>
-      `).join("");
+      $("detailGrid").innerHTML = rows.map(([label, value]) => {
+        return `
+          <b>${escapeHtml(label)}</b>
+          <div>${escapeHtml(value || "").replaceAll("\n", "<br>")}</div>
+        `;
+      }).join("");
 
-      const image = normalize(t.image || t.Image);
-      $("detailPhoto").style.display = image ? "inline-flex" : "none";
-      $("detailPhoto").href = image || "#";
+      if (currentTicket.image) {
+        $("photoLink").style.display = "inline-flex";
+        $("photoLink").href = currentTicket.image;
+      } else {
+        $("photoLink").style.display = "none";
+        $("photoLink").href = "#";
+      }
 
       detailDialog.showModal();
     }
 
-    $("detailStatusBtn").addEventListener("click", async () => {
-      if(!currentTicket) return;
-      const ticketId = normalize(currentTicket.ticketId || currentTicket["Ticket ID"]);
-      const status = $("detailStatus").value;
+    $("statusUpdateBtn").addEventListener("click", async () => {
+      if (!currentTicket) {
+        return;
+      }
 
-      if(!confirm(`${ticketId} 상태를 '${status}'로 변경할까요?`)) return;
+      const nextStatus = $("detailStatus").value;
 
-      await api("updateStatus", { ticketId, status });
-      detailDialog.close();
-      await loadTickets();
-      await loadAnalytics();
+      if (!confirm(`${currentTicket.ticketId} 상태를 '${nextStatus}'로 변경할까요?`)) {
+        return;
+      }
+
+      try {
+        await api("updateStatus", {
+          ticketId: currentTicket.ticketId,
+          status: nextStatus
+        });
+
+        detailDialog.close();
+
+        await loadTickets();
+        await loadAnalytics();
+      } catch (err) {
+        alert(err.message || "상태 변경 실패");
+      }
     });
 
-    $("detailDeleteBtn").addEventListener("click", async () => {
-      if(!currentTicket) return;
-      const ticketId = normalize(currentTicket.ticketId || currentTicket["Ticket ID"]);
+    $("deleteBtn").addEventListener("click", async () => {
+      if (!currentTicket) {
+        return;
+      }
 
-      if(!confirm(`${ticketId} 티켓을 삭제할까요?`)) return;
+      if (!confirm(`${currentTicket.ticketId} 티켓을 삭제할까요?`)) {
+        return;
+      }
 
-      await api("deleteTicket", { ticketId });
-      detailDialog.close();
-      await loadTickets();
-      await loadAnalytics();
+      try {
+        await api("deleteTicket", {
+          ticketId: currentTicket.ticketId
+        });
+
+        detailDialog.close();
+
+        await loadTickets();
+        await loadAnalytics();
+      } catch (err) {
+        alert(err.message || "삭제 실패");
+      }
     });
 
-    async function loadAnalytics(){
+    async function loadAnalytics() {
       $("skuBody").innerHTML = `<tr><td colspan="7">조회 중...</td></tr>`;
-      $("skuEmptyBox").style.display = "none";
+      $("emptySku").style.display = "none";
 
-      try{
-        const data = await api("listItems", analyticsServerFilters());
+      try {
+        const data = await api("listItems", analyticsFilters());
+
         skuItems = Array.isArray(data.items) ? data.items : [];
+
         renderAnalytics();
-      }catch(e){
-        $("skuBody").innerHTML = `<tr><td colspan="7">${escapeHtml(e.message)}</td></tr>`;
+      } catch (err) {
+        $("skuBody").innerHTML = `<tr><td colspan="7">${escapeHtml(err.message)}</td></tr>`;
       }
     }
 
-    function renderAnalytics(){
-      const uniqueTickets = new Set(skuItems.map(x => normalize(x.ticketId || x["Ticket ID"])).filter(Boolean));
-      const uniqueBulk = new Set(skuItems.map(x => normalize(x.bulkLabel || x["Bulk Label"])).filter(Boolean));
-      const reminded = skuItems.filter(x => String(x.reminded || "").toUpperCase() === "Y").length;
+    function renderAnalytics() {
+      const uniqueTickets = new Set(skuItems.map(item => item.ticketId).filter(Boolean));
+      const uniqueBulk = new Set(skuItems.map(item => item.bulkLabel).filter(Boolean));
       const doneTickets = new Set(
         skuItems
-          .filter(x => normalize(x.status || x.Status) === "완료")
-          .map(x => normalize(x.ticketId || x["Ticket ID"]))
+          .filter(item => item.status === "완료")
+          .map(item => item.ticketId)
+          .filter(Boolean)
       );
 
-      $("anTotalTickets").textContent = uniqueTickets.size;
-      $("anTotalSku").textContent = skuItems.length;
-      $("anBulkCount").textContent = uniqueBulk.size;
-      $("anReminderCount").textContent = reminded;
-      $("anCompleteRate").textContent = uniqueTickets.size ? `${Math.round(doneTickets.size / uniqueTickets.size * 100)}%` : "0%";
+      $("analyticsTotalTickets").textContent = uniqueTickets.size;
+      $("analyticsTotalSku").textContent = skuItems.length;
+      $("analyticsBulkCount").textContent = uniqueBulk.size;
+      $("analyticsReminderCount").textContent = skuItems.filter(item => item.reminded === "Y").length;
+      $("analyticsCompleteRate").textContent = uniqueTickets.size
+        ? `${Math.round(doneTickets.size / uniqueTickets.size * 100)}%`
+        : "0%";
 
-      const byDate = countBy(skuItems, x => String(x.date || x.Date || "").slice(0,10) || "미분류");
-      const byStatus = countBy(skuItems, x => normalize(x.status || x.Status) || "접수");
-      const byCategory = countBy(skuItems, x => normalize(x.category || x.Category) || "미분류");
-      const byBulk = countBy(skuItems, x => normalize(x.bulkLabel || x["Bulk Label"]) || "미분류");
+      const byDate = countBy(skuItems, item => String(item.date || "").slice(0, 10) || "미분류");
+      const byStatus = countBy(skuItems, item => item.status || "접수");
+      const byCategory = countBy(skuItems, item => item.category || "미분류");
+      const byBulk = countBy(skuItems, item => item.bulkLabel || "미분류");
 
-      const topBulk = Object.entries(byBulk).sort((a,b) => b[1]-a[1]).slice(0,10);
+      const dateLabels = Object.keys(byDate).sort();
+      const topBulk = Object.entries(byBulk)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
 
-      drawLine("dailyChart", Object.keys(byDate).sort(), Object.keys(byDate).sort().map(k => byDate[k]));
-      drawDoughnut("anStatusChart", Object.keys(byStatus), Object.values(byStatus));
-      drawBar("skuCategoryChart", Object.keys(byCategory), Object.values(byCategory));
-      drawBar("bulkChart", topBulk.map(x => x[0]), topBulk.map(x => x[1]));
+      drawChart("dailyChart", "line", dateLabels, dateLabels.map(label => byDate[label]));
+      drawChart("analyticsStatusChart", "doughnut", Object.keys(byStatus), Object.values(byStatus));
+      drawChart("skuCategoryChart", "bar", Object.keys(byCategory), Object.values(byCategory));
+      drawChart("bulkChart", "bar", topBulk.map(item => item[0]), topBulk.map(item => item[1]));
 
       renderSkuTable();
     }
 
-    function renderSkuTable(){
+    function renderSkuTable() {
       $("skuResultText").textContent = `${skuItems.length}건`;
       $("skuBody").innerHTML = "";
 
-      if(!skuItems.length){
-        $("skuEmptyBox").style.display = "block";
+      if (!skuItems.length) {
+        $("emptySku").style.display = "block";
         return;
       }
 
-      $("skuEmptyBox").style.display = "none";
-      $("skuBody").innerHTML = skuItems.slice(0,300).map(x => `
-        <tr>
-          <td>${escapeHtml(x.ticketId || x["Ticket ID"] || "")}</td>
-          <td>${escapeHtml(x.date || x.Date || "")}</td>
-          <td>${escapeHtml(x.category || x.Category || "")}</td>
-          <td class="clip">${escapeHtml(x.bulkLabel || x["Bulk Label"] || "")}</td>
-          <td class="clip">${escapeHtml(x.sku || x.SKU || "")}</td>
-          <td>${escapeHtml(x.creatorId || x["Creator ID"] || "")}</td>
-          <td>${statusPill(x.status || x.Status)}</td>
-        </tr>
-      `).join("");
+      $("emptySku").style.display = "none";
+
+      $("skuBody").innerHTML = skuItems.slice(0, 500).map(item => {
+        return `
+          <tr>
+            <td>${escapeHtml(item.ticketId)}</td>
+            <td>${escapeHtml(item.date)}</td>
+            <td>${escapeHtml(item.category || "미분류")}</td>
+            <td class="clip">${escapeHtml(item.bulkLabel)}</td>
+            <td class="clip">${escapeHtml(item.sku)}</td>
+            <td>${escapeHtml(item.creatorId)}</td>
+            <td>${statusPill(item.status)}</td>
+          </tr>
+        `;
+      }).join("");
     }
 
-    function toCsv(rows, headers){
-      const bom = "\uFEFF";
-      const lines = [headers.map(h => csvCell(h.label)).join(",")];
+    function csvCell(value) {
+      return `"${String(value ?? "").replaceAll('"', '""')}"`;
+    }
 
-      rows.forEach(row => {
-        lines.push(headers.map(h => csvCell(row[h.key] ?? "")).join(","));
+    function toCsv(rows, columns) {
+      const header = columns.map(column => csvCell(column.label)).join(",");
+      const body = rows.map(row => {
+        return columns.map(column => csvCell(row[column.key] || "")).join(",");
       });
 
-      return bom + lines.join("\r\n");
+      return "\uFEFF" + [header, ...body].join("\r\n");
     }
 
-    function csvCell(value){
-      const s = String(value ?? "").replaceAll('"','""');
-      return `"${s}"`;
-    }
+    function downloadText(filename, text) {
+      const blob = new Blob([text], {
+        type: "text/csv;charset=utf-8"
+      });
 
-    function download(filename, text){
-      const blob = new Blob([text], {type:"text/csv;charset=utf-8"});
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
+
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
+
       URL.revokeObjectURL(url);
     }
 
-    function ticketRowsForCsv(){
-      return filteredTickets.map(t => ({
-        ticketId:t.ticketId || t["Ticket ID"] || "",
-        date:t.date || t.Date || "",
-        category:t.category || t.Category || "",
-        bulkLabel:t.bulkLabel || t["Bulk Label"] || "",
-        sku:t.sku || t.SKU || "",
-        creatorId:t.creatorId || t["Creator ID"] || "",
-        image:t.image || t.Image || "",
-        comment:t.comment || t.Comment || "",
-        status:t.status || t.Status || "",
-        history:t.history || t.History || ""
+    function ticketCsvRows() {
+      return tickets.map(ticket => ({
+        ticketId: ticket.ticketId,
+        date: ticket.date,
+        category: ticket.category,
+        bulkLabel: ticket.bulkLabel,
+        sku: ticket.sku,
+        creatorId: ticket.creatorId,
+        image: ticket.image,
+        comment: ticket.comment,
+        status: ticket.status,
+        history: ticket.history
       }));
     }
 
-    async function downloadTicketCsv(){
-      const rows = ticketRowsForCsv();
-      const csv = toCsv(rows, [
-        {key:"ticketId",label:"Ticket ID"},
-        {key:"date",label:"Date"},
-        {key:"category",label:"Category"},
-        {key:"bulkLabel",label:"Bulk Label"},
-        {key:"sku",label:"SKU"},
-        {key:"creatorId",label:"Creator ID"},
-        {key:"image",label:"Image"},
-        {key:"comment",label:"Comment"},
-        {key:"status",label:"Status"},
-        {key:"history",label:"History"}
-      ]);
-      download(`rt_tickets_${todayString()}.csv`, csv);
-    }
-
-    async function downloadSkuCsv(filters){
-      const data = await api("listItems", filters);
-      const rows = (data.items || []).map(x => ({
-        ticketId:x.ticketId || x["Ticket ID"] || "",
-        date:x.date || x.Date || "",
-        category:x.category || x.Category || "",
-        bulkLabel:x.bulkLabel || x["Bulk Label"] || "",
-        sku:x.sku || x.SKU || "",
-        creatorId:x.creatorId || x["Creator ID"] || "",
-        status:x.status || x.Status || "",
-        reminded:x.reminded || "",
-        image:x.image || x.Image || "",
-        comment:x.comment || x.Comment || ""
+    function itemCsvRows(rows) {
+      return rows.map(item => ({
+        ticketId: item.ticketId,
+        date: item.date,
+        category: item.category,
+        bulkLabel: item.bulkLabel,
+        sku: item.sku,
+        creatorId: item.creatorId,
+        status: item.status,
+        reminded: item.reminded,
+        image: item.image,
+        comment: item.comment
       }));
-
-      const csv = toCsv(rows, [
-        {key:"ticketId",label:"Ticket ID"},
-        {key:"date",label:"Date"},
-        {key:"category",label:"Category"},
-        {key:"bulkLabel",label:"Bulk Label"},
-        {key:"sku",label:"SKU"},
-        {key:"creatorId",label:"Creator ID"},
-        {key:"status",label:"Status"},
-        {key:"reminded",label:"Reminded"},
-        {key:"image",label:"Image Folder"},
-        {key:"comment",label:"Comment"}
-      ]);
-
-      download(`rt_sku_items_${todayString()}.csv`, csv);
     }
 
-    function downloadAnalyticsCsv(){
-      const rows = skuItems.map(x => ({
-        ticketId:x.ticketId || x["Ticket ID"] || "",
-        date:x.date || x.Date || "",
-        category:x.category || x.Category || "",
-        bulkLabel:x.bulkLabel || x["Bulk Label"] || "",
-        sku:x.sku || x.SKU || "",
-        creatorId:x.creatorId || x["Creator ID"] || "",
-        status:x.status || x.Status || "",
-        reminded:x.reminded || ""
-      }));
-
-      const csv = toCsv(rows, [
-        {key:"ticketId",label:"Ticket ID"},
-        {key:"date",label:"Date"},
-        {key:"category",label:"Category"},
-        {key:"bulkLabel",label:"Bulk Label"},
-        {key:"sku",label:"SKU"},
-        {key:"creatorId",label:"Creator ID"},
-        {key:"status",label:"Status"},
-        {key:"reminded",label:"Reminded"}
+    $("ticketsCsvBtn").addEventListener("click", () => {
+      const csv = toCsv(ticketCsvRows(), [
+        { key: "ticketId", label: "Ticket ID" },
+        { key: "date", label: "Date" },
+        { key: "category", label: "Category" },
+        { key: "bulkLabel", label: "Bulk Label" },
+        { key: "sku", label: "SKU" },
+        { key: "creatorId", label: "Creator ID" },
+        { key: "image", label: "Image" },
+        { key: "comment", label: "Comment" },
+        { key: "status", label: "Status" },
+        { key: "history", label: "History" }
       ]);
 
-      download(`rt_analytics_${todayString()}.csv`, csv);
-    }
-
-    $("opSearchBtn").addEventListener("click", loadTickets);
-    $("ticketCsvBtn").addEventListener("click", downloadTicketCsv);
-    $("skuCsvBtn").addEventListener("click", () => downloadSkuCsv(operationServerFilters()));
-
-    ["opKeyword","opBulk","opTicket","opCreator"].forEach(id => {
-      $(id).addEventListener("keydown", e => {
-        if(e.key === "Enter") loadTickets();
-      });
+      downloadText(`rt_tickets_${todayString()}.csv`, csv);
     });
-    $("opStatus").addEventListener("change", loadTickets);
 
-    $("opTodayBtn").addEventListener("click", () => {
+    $("skuCsvBtn").addEventListener("click", async () => {
+      try {
+        const data = await api("listItems", operationFilters());
+        const rows = itemCsvRows(data.items || []);
+
+        const csv = toCsv(rows, [
+          { key: "ticketId", label: "Ticket ID" },
+          { key: "date", label: "Date" },
+          { key: "category", label: "Category" },
+          { key: "bulkLabel", label: "Bulk Label" },
+          { key: "sku", label: "SKU" },
+          { key: "creatorId", label: "Creator ID" },
+          { key: "status", label: "Status" },
+          { key: "reminded", label: "Reminded" },
+          { key: "image", label: "Image Folder" },
+          { key: "comment", label: "Comment" }
+        ]);
+
+        downloadText(`rt_sku_items_${todayString()}.csv`, csv);
+      } catch (err) {
+        alert(err.message || "SKU CSV 다운로드 실패");
+      }
+    });
+
+    $("analyticsCsvBtn").addEventListener("click", () => {
+      const csv = toCsv(itemCsvRows(skuItems), [
+        { key: "ticketId", label: "Ticket ID" },
+        { key: "date", label: "Date" },
+        { key: "category", label: "Category" },
+        { key: "bulkLabel", label: "Bulk Label" },
+        { key: "sku", label: "SKU" },
+        { key: "creatorId", label: "Creator ID" },
+        { key: "status", label: "Status" },
+        { key: "reminded", label: "Reminded" }
+      ]);
+
+      downloadText(`rt_analytics_${todayString()}.csv`, csv);
+    });
+
+    $("analyticsSkuCsvBtn").addEventListener("click", async () => {
+      try {
+        const data = await api("listItems", analyticsFilters());
+        const rows = itemCsvRows(data.items || []);
+
+        const csv = toCsv(rows, [
+          { key: "ticketId", label: "Ticket ID" },
+          { key: "date", label: "Date" },
+          { key: "category", label: "Category" },
+          { key: "bulkLabel", label: "Bulk Label" },
+          { key: "sku", label: "SKU" },
+          { key: "creatorId", label: "Creator ID" },
+          { key: "status", label: "Status" },
+          { key: "reminded", label: "Reminded" },
+          { key: "image", label: "Image Folder" },
+          { key: "comment", label: "Comment" }
+        ]);
+
+        downloadText(`rt_sku_items_${todayString()}.csv`, csv);
+      } catch (err) {
+        alert(err.message || "SKU CSV 다운로드 실패");
+      }
+    });
+
+    $("searchBtn").addEventListener("click", loadTickets);
+
+    $("todayBtn").addEventListener("click", () => {
       const today = todayString();
-      $("opDateFrom").value = today;
-      $("opDateTo").value = today;
+      $("dateFrom").value = today;
+      $("dateTo").value = today;
       loadTickets();
     });
 
-    $("opSevenBtn").addEventListener("click", () => {
-      const today = todayString();
-      $("opDateFrom").value = addDays(today, -6);
-      $("opDateTo").value = today;
+    $("sevenBtn").addEventListener("click", () => {
+      $("dateFrom").value = addDays(-6);
+      $("dateTo").value = todayString();
       loadTickets();
     });
 
-    $("opThirtyBtn").addEventListener("click", () => {
-      const today = todayString();
-      $("opDateFrom").value = addDays(today, -29);
-      $("opDateTo").value = today;
+    $("thirtyBtn").addEventListener("click", () => {
+      $("dateFrom").value = addDays(-29);
+      $("dateTo").value = todayString();
       loadTickets();
     });
 
-    $("opClearBtn").addEventListener("click", () => {
-      $("opDateFrom").value = "";
-      $("opDateTo").value = "";
+    $("allDateBtn").addEventListener("click", () => {
+      $("dateFrom").value = "";
+      $("dateTo").value = "";
       loadTickets();
     });
 
-    $("anApplyBtn").addEventListener("click", loadAnalytics);
-    $("analyticsCsvBtn").addEventListener("click", downloadAnalyticsCsv);
-    $("analyticsSkuCsvBtn").addEventListener("click", () => downloadSkuCsv(analyticsServerFilters()));
+    $("analyticsSearchBtn").addEventListener("click", loadAnalytics);
 
-    $("anTodayBtn").addEventListener("click", () => {
+    $("analyticsTodayBtn").addEventListener("click", () => {
       const today = todayString();
-      $("anDateFrom").value = today;
-      $("anDateTo").value = today;
+      $("analyticsDateFrom").value = today;
+      $("analyticsDateTo").value = today;
       loadAnalytics();
     });
 
-    $("anClearBtn").addEventListener("click", () => {
-      $("anDateFrom").value = "";
-      $("anDateTo").value = "";
+    $("analyticsAllBtn").addEventListener("click", () => {
+      $("analyticsDateFrom").value = "";
+      $("analyticsDateTo").value = "";
       loadAnalytics();
     });
 
-    ["anKeyword"].forEach(id => {
-      $(id).addEventListener("keydown", e => {
-        if(e.key === "Enter") loadAnalytics();
+    ["keyword", "bulkLabel", "ticketId", "creatorId"].forEach(id => {
+      $(id).addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+          loadTickets();
+        }
       });
     });
-    ["anCategory","anStatus"].forEach(id => {
+
+    $("status").addEventListener("change", loadTickets);
+
+    ["analyticsKeyword"].forEach(id => {
+      $(id).addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+          loadAnalytics();
+        }
+      });
+    });
+
+    ["analyticsCategory", "analyticsStatus"].forEach(id => {
       $(id).addEventListener("change", loadAnalytics);
     });
 
-    initAuth();
+    async function init() {
+      const token = localStorage.getItem(TOKEN_KEY);
+
+      if (!token) {
+        showLogin();
+        return;
+      }
+
+      try {
+        const data = await api("validateToken");
+
+        if (data.role !== "admin") {
+          throw new Error("관리자 권한이 없습니다.");
+        }
+
+        showApp();
+        setDefaultDates();
+
+        await loadTickets();
+        await loadAnalytics();
+      } catch (err) {
+        localStorage.removeItem(TOKEN_KEY);
+        showLogin();
+      }
+    }
+
+    init();
   </script>
 </body>
 </html>
