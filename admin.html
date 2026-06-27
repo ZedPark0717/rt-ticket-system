@@ -30,6 +30,7 @@
 
     button,input,select { font:inherit; }
     button { border:0; cursor:pointer; }
+    button:disabled { opacity:.62; cursor:not-allowed; }
     a { color:inherit; text-decoration:none; }
 
     .login-page {
@@ -146,6 +147,46 @@
       font-size:13px;
     }
 
+    .loading {
+      position:fixed;
+      inset:0;
+      z-index:999;
+      display:none;
+      place-items:center;
+      background:rgba(7,20,38,.42);
+      backdrop-filter:blur(2px);
+    }
+
+    .loading-box {
+      width:min(280px,calc(100vw - 40px));
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      box-shadow:0 28px 80px rgba(0,0,0,.24);
+      padding:24px;
+      text-align:center;
+    }
+
+    .spinner {
+      width:38px;
+      height:38px;
+      margin:0 auto 14px;
+      border-radius:50%;
+      border:4px solid #d9e3ef;
+      border-top-color:var(--sky);
+      animation:spin .8s linear infinite;
+    }
+
+    .loading-text {
+      color:var(--navy);
+      font-weight:900;
+      font-size:14px;
+    }
+
+    @keyframes spin {
+      to { transform:rotate(360deg); }
+    }
+
     .app { display:none; min-height:100vh; }
 
     .topbar {
@@ -224,7 +265,7 @@
 
     .kpis {
       display:grid;
-      grid-template-columns:repeat(4,1fr);
+      grid-template-columns:repeat(5,1fr);
       gap:13px;
       margin-bottom:15px;
     }
@@ -552,6 +593,13 @@
 </head>
 
 <body>
+  <div id="loading" class="loading">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <div id="loadingText" class="loading-text">처리 중입니다...</div>
+    </div>
+  </div>
+
   <section id="loginPage" class="login-page">
     <div class="login-card">
       <div class="brand">
@@ -604,6 +652,7 @@
           <div class="kpi"><b>전체 티켓</b><strong id="kpiTotal">0</strong></div>
           <div class="kpi"><b>접수</b><strong id="kpiReceived">0</strong></div>
           <div class="kpi"><b>내용 확인 중</b><strong id="kpiChecking">0</strong></div>
+          <div class="kpi"><b>고객사 확인 중</b><strong id="kpiCustomer">0</strong></div>
           <div class="kpi"><b>완료</b><strong id="kpiDone">0</strong></div>
         </div>
 
@@ -880,8 +929,35 @@
     let skuItems = [];
     let currentTicket = null;
     let charts = {};
+    let loadingCount = 0;
 
     const $ = id => document.getElementById(id);
+
+    function showLoading(message) {
+      loadingCount += 1;
+      $("loadingText").textContent = message || "처리 중입니다...";
+      $("loading").style.display = "grid";
+      document.querySelectorAll("button").forEach(btn => btn.disabled = true);
+    }
+
+    function hideLoading() {
+      loadingCount = Math.max(0, loadingCount - 1);
+
+      if (loadingCount === 0) {
+        $("loading").style.display = "none";
+        document.querySelectorAll("button").forEach(btn => btn.disabled = false);
+      }
+    }
+
+    async function withLoading(message, task) {
+      showLoading(message);
+
+      try {
+        return await task();
+      } finally {
+        hideLoading();
+      }
+    }
 
     function escapeHtml(value) {
       return String(value ?? "")
@@ -942,9 +1018,7 @@
         const category = row.category || "미분류";
         const bulk = normalizeBulk(row.bulkLabel);
 
-        if (!bulk) {
-          return;
-        }
+        if (!bulk) return;
 
         if (!map[category]) {
           map[category] = new Set();
@@ -1023,27 +1097,28 @@
 
     $("loginForm").addEventListener("submit", async event => {
       event.preventDefault();
-
       $("loginError").style.display = "none";
 
       try {
-        const data = await api("login", {
-          id: $("loginId").value.trim(),
-          password: $("loginPw").value,
-          requiredRole: "admin"
+        await withLoading("로그인 중입니다...", async () => {
+          const data = await api("login", {
+            id: $("loginId").value.trim(),
+            password: $("loginPw").value,
+            requiredRole: "admin"
+          });
+
+          if (data.role !== "admin") {
+            throw new Error("관리자 권한이 없습니다.");
+          }
+
+          localStorage.setItem(TOKEN_KEY, data.token);
+
+          showApp();
+          setDefaultDates();
+
+          await loadTickets(false);
+          await loadAnalytics(false);
         });
-
-        if (data.role !== "admin") {
-          throw new Error("관리자 권한이 없습니다.");
-        }
-
-        localStorage.setItem(TOKEN_KEY, data.token);
-
-        showApp();
-        setDefaultDates();
-
-        await loadTickets();
-        await loadAnalytics();
       } catch (err) {
         $("loginError").textContent = err.message || "로그인 실패";
         $("loginError").style.display = "block";
@@ -1052,7 +1127,9 @@
 
     $("logoutBtn").addEventListener("click", async () => {
       try {
-        await api("logout");
+        await withLoading("로그아웃 중입니다...", async () => {
+          await api("logout");
+        });
       } catch (err) {}
 
       localStorage.removeItem(TOKEN_KEY);
@@ -1095,20 +1172,22 @@
       };
     }
 
-    async function loadTickets() {
-      $("ticketBody").innerHTML = `<tr><td colspan="8">조회 중...</td></tr>`;
-      $("emptyTickets").style.display = "none";
+    async function loadTickets(useLoader = true) {
+      const run = async () => {
+        $("ticketBody").innerHTML = `<tr><td colspan="8">조회 중...</td></tr>`;
+        $("emptyTickets").style.display = "none";
 
-      try {
-        const data = await api("list", operationFilters());
+        try {
+          const data = await api("list", operationFilters());
+          tickets = Array.isArray(data.tickets) ? data.tickets : [];
+          renderTickets();
+          renderOperationsDashboard();
+        } catch (err) {
+          $("ticketBody").innerHTML = `<tr><td colspan="8">${escapeHtml(err.message)}</td></tr>`;
+        }
+      };
 
-        tickets = Array.isArray(data.tickets) ? data.tickets : [];
-
-        renderTickets();
-        renderOperationsDashboard();
-      } catch (err) {
-        $("ticketBody").innerHTML = `<tr><td colspan="8">${escapeHtml(err.message)}</td></tr>`;
-      }
+      return useLoader ? withLoading("티켓을 조회 중입니다...", run) : run();
     }
 
     function renderTickets() {
@@ -1155,6 +1234,7 @@
       $("kpiTotal").textContent = tickets.length;
       $("kpiReceived").textContent = statusCounts["접수"] || 0;
       $("kpiChecking").textContent = statusCounts["내용 확인 중"] || 0;
+      $("kpiCustomer").textContent = statusCounts["고객사 확인 중"] || 0;
       $("kpiDone").textContent = statusCounts["완료"] || 0;
 
       drawChart("statusChart", "doughnut", Object.keys(statusCounts), Object.values(statusCounts));
@@ -1203,13 +1283,8 @@
             }
           },
           scales: isDoughnut ? {} : {
-            x: {
-              grid: { display: false }
-            },
-            y: {
-              beginAtZero: true,
-              ticks: { precision: 0 }
-            }
+            x: { grid: { display: false } },
+            y: { beginAtZero: true, ticks: { precision: 0 } }
           }
         }
       });
@@ -1217,10 +1292,7 @@
 
     function openDetail(ticketId) {
       currentTicket = tickets.find(ticket => ticket.ticketId === ticketId);
-
-      if (!currentTicket) {
-        return;
-      }
+      if (!currentTicket) return;
 
       $("detailTitle").textContent = currentTicket.ticketId;
       $("detailStatus").value = currentTicket.status || "접수";
@@ -1265,15 +1337,16 @@
       }
 
       try {
-        await api("updateStatus", {
-          ticketId: currentTicket.ticketId,
-          status: nextStatus
+        await withLoading("상태를 변경 중입니다...", async () => {
+          await api("updateStatus", {
+            ticketId: currentTicket.ticketId,
+            status: nextStatus
+          });
+
+          detailDialog.close();
+          await loadTickets(false);
+          await loadAnalytics(false);
         });
-
-        detailDialog.close();
-
-        await loadTickets();
-        await loadAnalytics();
       } catch (err) {
         alert(err.message || "상태 변경 실패");
       }
@@ -1287,36 +1360,41 @@
       }
 
       try {
-        await api("deleteTicket", {
-          ticketId: currentTicket.ticketId
+        await withLoading("티켓을 삭제 중입니다...", async () => {
+          await api("deleteTicket", {
+            ticketId: currentTicket.ticketId
+          });
+
+          detailDialog.close();
+          await loadTickets(false);
+          await loadAnalytics(false);
         });
-
-        detailDialog.close();
-
-        await loadTickets();
-        await loadAnalytics();
       } catch (err) {
         alert(err.message || "삭제 실패");
       }
     });
 
-    async function loadAnalytics() {
-      $("skuBody").innerHTML = `<tr><td colspan="7">조회 중...</td></tr>`;
-      $("emptySku").style.display = "none";
+    async function loadAnalytics(useLoader = true) {
+      const run = async () => {
+        $("skuBody").innerHTML = `<tr><td colspan="7">조회 중...</td></tr>`;
+        $("emptySku").style.display = "none";
 
-      try {
-        const filters = analyticsFilters();
+        try {
+          const filters = analyticsFilters();
 
-        const ticketData = await api("list", filters);
-        const itemData = await api("listItems", filters);
+          const ticketData = await api("list", filters);
+          const itemData = await api("listItems", filters);
 
-        analyticsTickets = Array.isArray(ticketData.tickets) ? ticketData.tickets : [];
-        skuItems = Array.isArray(itemData.items) ? itemData.items : [];
+          analyticsTickets = Array.isArray(ticketData.tickets) ? ticketData.tickets : [];
+          skuItems = Array.isArray(itemData.items) ? itemData.items : [];
 
-        renderAnalytics();
-      } catch (err) {
-        $("skuBody").innerHTML = `<tr><td colspan="7">${escapeHtml(err.message)}</td></tr>`;
-      }
+          renderAnalytics();
+        } catch (err) {
+          $("skuBody").innerHTML = `<tr><td colspan="7">${escapeHtml(err.message)}</td></tr>`;
+        }
+      };
+
+      return useLoader ? withLoading("분석 데이터를 조회 중입니다...", run) : run();
     }
 
     function renderAnalytics() {
@@ -1437,85 +1515,93 @@
       }));
     }
 
-    $("ticketsCsvBtn").addEventListener("click", () => {
-      const csv = toCsv(ticketCsvRows(tickets), [
-        { key: "ticketId", label: "Ticket ID" },
-        { key: "date", label: "Date" },
-        { key: "category", label: "Category" },
-        { key: "bulkLabel", label: "Bulk Label" },
-        { key: "sku", label: "SKU" },
-        { key: "creatorId", label: "Creator ID" },
-        { key: "image", label: "Image" },
-        { key: "comment", label: "Comment" },
-        { key: "status", label: "Status" },
-        { key: "history", label: "History" }
-      ]);
+    $("ticketsCsvBtn").addEventListener("click", async () => {
+      await withLoading("Tickets CSV 생성 중입니다...", async () => {
+        const csv = toCsv(ticketCsvRows(tickets), [
+          { key: "ticketId", label: "Ticket ID" },
+          { key: "date", label: "Date" },
+          { key: "category", label: "Category" },
+          { key: "bulkLabel", label: "Bulk Label" },
+          { key: "sku", label: "SKU" },
+          { key: "creatorId", label: "Creator ID" },
+          { key: "image", label: "Image" },
+          { key: "comment", label: "Comment" },
+          { key: "status", label: "Status" },
+          { key: "history", label: "History" }
+        ]);
 
-      downloadText(`rt_tickets_${todayString()}.csv`, csv);
+        downloadText(`rt_tickets_${todayString()}.csv`, csv);
+      });
     });
 
     $("skuCsvBtn").addEventListener("click", async () => {
       try {
-        const data = await api("listItems", operationFilters());
-        const csv = toCsv(itemCsvRows(data.items || []), [
+        await withLoading("SKU CSV 생성 중입니다...", async () => {
+          const data = await api("listItems", operationFilters());
+          const csv = toCsv(itemCsvRows(data.items || []), [
+            { key: "ticketId", label: "Ticket ID" },
+            { key: "date", label: "Date" },
+            { key: "category", label: "Category" },
+            { key: "bulkLabel", label: "Bulk Label" },
+            { key: "sku", label: "SKU" },
+            { key: "creatorId", label: "Creator ID" },
+            { key: "status", label: "Status" },
+            { key: "reminded", label: "Reminded" },
+            { key: "image", label: "Image Folder" },
+            { key: "comment", label: "Comment" }
+          ]);
+
+          downloadText(`rt_sku_items_${todayString()}.csv`, csv);
+        });
+      } catch (err) {
+        alert(err.message || "SKU CSV 다운로드 실패");
+      }
+    });
+
+    $("analyticsCsvBtn").addEventListener("click", async () => {
+      await withLoading("Analytics CSV 생성 중입니다...", async () => {
+        const csv = toCsv(ticketCsvRows(analyticsTickets), [
           { key: "ticketId", label: "Ticket ID" },
           { key: "date", label: "Date" },
           { key: "category", label: "Category" },
           { key: "bulkLabel", label: "Bulk Label" },
           { key: "sku", label: "SKU" },
           { key: "creatorId", label: "Creator ID" },
+          { key: "image", label: "Image" },
+          { key: "comment", label: "Comment" },
           { key: "status", label: "Status" },
-          { key: "reminded", label: "Reminded" },
-          { key: "image", label: "Image Folder" },
-          { key: "comment", label: "Comment" }
+          { key: "history", label: "History" }
         ]);
 
-        downloadText(`rt_sku_items_${todayString()}.csv`, csv);
-      } catch (err) {
-        alert(err.message || "SKU CSV 다운로드 실패");
-      }
-    });
-
-    $("analyticsCsvBtn").addEventListener("click", () => {
-      const csv = toCsv(ticketCsvRows(analyticsTickets), [
-        { key: "ticketId", label: "Ticket ID" },
-        { key: "date", label: "Date" },
-        { key: "category", label: "Category" },
-        { key: "bulkLabel", label: "Bulk Label" },
-        { key: "sku", label: "SKU" },
-        { key: "creatorId", label: "Creator ID" },
-        { key: "image", label: "Image" },
-        { key: "comment", label: "Comment" },
-        { key: "status", label: "Status" },
-        { key: "history", label: "History" }
-      ]);
-
-      downloadText(`rt_analytics_tickets_${todayString()}.csv`, csv);
+        downloadText(`rt_analytics_tickets_${todayString()}.csv`, csv);
+      });
     });
 
     $("analyticsSkuCsvBtn").addEventListener("click", async () => {
       try {
-        const data = await api("listItems", analyticsFilters());
-        const csv = toCsv(itemCsvRows(data.items || []), [
-          { key: "ticketId", label: "Ticket ID" },
-          { key: "date", label: "Date" },
-          { key: "category", label: "Category" },
-          { key: "bulkLabel", label: "Bulk Label" },
-          { key: "sku", label: "SKU" },
-          { key: "creatorId", label: "Creator ID" },
-          { key: "status", label: "Status" },
-          { key: "reminded", label: "Reminded" },
-          { key: "image", label: "Image Folder" },
-          { key: "comment", label: "Comment" }
-        ]);
+        await withLoading("SKU CSV 생성 중입니다...", async () => {
+          const data = await api("listItems", analyticsFilters());
+          const csv = toCsv(itemCsvRows(data.items || []), [
+            { key: "ticketId", label: "Ticket ID" },
+            { key: "date", label: "Date" },
+            { key: "category", label: "Category" },
+            { key: "bulkLabel", label: "Bulk Label" },
+            { key: "sku", label: "SKU" },
+            { key: "creatorId", label: "Creator ID" },
+            { key: "status", label: "Status" },
+            { key: "reminded", label: "Reminded" },
+            { key: "image", label: "Image Folder" },
+            { key: "comment", label: "Comment" }
+          ]);
 
-        downloadText(`rt_sku_items_${todayString()}.csv`, csv);
+          downloadText(`rt_sku_items_${todayString()}.csv`, csv);
+        });
       } catch (err) {
         alert(err.message || "SKU CSV 다운로드 실패");
       }
     });
 
-    $("searchBtn").addEventListener("click", loadTickets);
+    $("searchBtn").addEventListener("click", () => loadTickets());
 
     $("todayBtn").addEventListener("click", () => {
       const today = todayString();
@@ -1542,7 +1628,7 @@
       loadTickets();
     });
 
-    $("analyticsSearchBtn").addEventListener("click", loadAnalytics);
+    $("analyticsSearchBtn").addEventListener("click", () => loadAnalytics());
 
     $("analyticsTodayBtn").addEventListener("click", () => {
       const today = todayString();
@@ -1565,7 +1651,7 @@
       });
     });
 
-    $("status").addEventListener("change", loadTickets);
+    $("status").addEventListener("change", () => loadTickets());
 
     $("analyticsKeyword").addEventListener("keydown", event => {
       if (event.key === "Enter") {
@@ -1574,7 +1660,7 @@
     });
 
     ["analyticsCategory", "analyticsStatus"].forEach(id => {
-      $(id).addEventListener("change", loadAnalytics);
+      $(id).addEventListener("change", () => loadAnalytics());
     });
 
     async function init() {
@@ -1586,17 +1672,19 @@
       }
 
       try {
-        const data = await api("validateToken");
+        await withLoading("관리자 정보를 확인 중입니다...", async () => {
+          const data = await api("validateToken");
 
-        if (data.role !== "admin") {
-          throw new Error("관리자 권한이 없습니다.");
-        }
+          if (data.role !== "admin") {
+            throw new Error("관리자 권한이 없습니다.");
+          }
 
-        showApp();
-        setDefaultDates();
+          showApp();
+          setDefaultDates();
 
-        await loadTickets();
-        await loadAnalytics();
+          await loadTickets(false);
+          await loadAnalytics(false);
+        });
       } catch (err) {
         localStorage.removeItem(TOKEN_KEY);
         showLogin();
