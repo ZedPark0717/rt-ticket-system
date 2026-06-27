@@ -4,675 +4,549 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>RT Ticket Admin</title>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     :root {
-      --navy: #071d3a;
-      --navy-2: #0b2f5b;
-      --blue: #2f63e7;
-      --sky: #42b8d7;
-      --bg: #eef5fb;
-      --card: #ffffff;
-      --line: #d9e3ef;
-      --text: #071426;
-      --muted: #68768a;
-      --danger: #ef4444;
-      --ok: #10a66a;
-      --warn: #f59e0b;
-      --purple: #7c3aed;
-      --radius: 8px;
-      --shadow: 0 18px 45px rgba(7, 29, 58, .12);
+      --navy:#071d3a;
+      --blue:#2f63e7;
+      --sky:#42b8d7;
+      --card:#fff;
+      --line:#d9e3ef;
+      --text:#071426;
+      --muted:#68768a;
+      --radius:8px;
+      --shadow:0 18px 45px rgba(7,29,58,.12);
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing:border-box; }
 
     body {
-      margin: 0;
-      font-family: Arial, "Noto Sans KR", sans-serif;
-      background: linear-gradient(180deg, #edf6fb 0%, #f7f9fc 52%, #edf4fa 100%);
-      color: var(--text);
-      letter-spacing: 0;
+      margin:0;
+      font-family:Arial,"Noto Sans KR",sans-serif;
+      background:linear-gradient(180deg,#edf6fb 0%,#f7f9fc 52%,#edf4fa 100%);
+      color:var(--text);
     }
 
-    button,
-    input,
-    select {
-      font: inherit;
-    }
-
-    button {
-      border: 0;
-      cursor: pointer;
-    }
-
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
+    button,input,select { font:inherit; }
+    button { border:0; cursor:pointer; }
+    a { color:inherit; text-decoration:none; }
 
     .login-page {
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:24px;
       background:
-        radial-gradient(circle at 14% 18%, rgba(66, 184, 215, .26), transparent 32%),
-        linear-gradient(135deg, #061a34 0%, #0b2f5b 55%, #f4f8fc 55%, #f4f8fc 100%);
+        radial-gradient(circle at 14% 18%,rgba(66,184,215,.26),transparent 32%),
+        linear-gradient(135deg,#061a34 0%,#0b2f5b 55%,#f4f8fc 55%,#f4f8fc 100%);
     }
 
     .login-card {
-      width: min(450px, 100%);
-      background: #ffffff;
-      border: 1px solid rgba(255, 255, 255, .5);
-      border-radius: 14px;
-      box-shadow: var(--shadow);
-      padding: 30px;
+      width:min(450px,100%);
+      background:#fff;
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      padding:30px;
     }
 
     .brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 24px;
+      display:flex;
+      align-items:center;
+      gap:14px;
+      margin-bottom:24px;
     }
 
     .brand img {
-      width: 158px;
-      height: auto;
-      display: block;
-      background: #ffffff;
-      border-radius: 6px;
+      width:158px;
+      background:#fff;
+      border-radius:6px;
     }
 
     .brand-fallback {
-      display: none;
-      font-size: 30px;
-      font-weight: 900;
-      color: #000000;
-      letter-spacing: 1px;
+      display:none;
+      font-size:30px;
+      font-weight:900;
+      color:#000;
+      letter-spacing:1px;
     }
 
     .login-title {
-      margin: 0 0 6px;
-      font-size: 25px;
-      font-weight: 900;
-      color: var(--navy);
+      margin:0 0 6px;
+      font-size:25px;
+      font-weight:900;
+      color:var(--navy);
     }
 
     .login-sub {
-      margin: 0 0 22px;
-      color: var(--muted);
-      font-size: 14px;
+      margin:0 0 22px;
+      color:var(--muted);
+      font-size:14px;
     }
 
     label {
-      font-size: 12px;
-      font-weight: 900;
-      color: #10233f;
+      font-size:12px;
+      font-weight:900;
+      color:#10233f;
     }
 
     .field {
-      display: grid;
-      gap: 7px;
-      margin-bottom: 12px;
+      display:grid;
+      gap:7px;
+      margin-bottom:12px;
     }
 
-    input,
-    select {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 11px 12px;
-      color: var(--text);
-      background: #ffffff;
-      outline: none;
+    input,select {
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:11px 12px;
+      background:#fff;
+      color:var(--text);
+      outline:none;
     }
 
-    input:focus,
-    select:focus {
-      border-color: var(--sky);
-      box-shadow: 0 0 0 3px rgba(66, 184, 215, .16);
+    input:focus,select:focus {
+      border-color:var(--sky);
+      box-shadow:0 0 0 3px rgba(66,184,215,.16);
     }
 
     .primary {
-      background: var(--blue);
-      color: #ffffff;
-      border-radius: var(--radius);
-      padding: 11px 14px;
-      font-weight: 900;
-      white-space: nowrap;
+      background:var(--blue);
+      color:#fff;
+      border-radius:var(--radius);
+      padding:11px 14px;
+      font-weight:900;
+      white-space:nowrap;
     }
 
     .ghost {
-      background: #e9f0f8;
-      color: #10233f;
-      border-radius: var(--radius);
-      padding: 10px 13px;
-      font-weight: 900;
-      white-space: nowrap;
+      background:#e9f0f8;
+      color:#10233f;
+      border-radius:var(--radius);
+      padding:10px 13px;
+      font-weight:900;
+      white-space:nowrap;
     }
 
     .danger {
-      background: #ffe8e8;
-      color: #c91818;
-      border-radius: var(--radius);
-      padding: 10px 13px;
-      font-weight: 900;
-      white-space: nowrap;
+      background:#ffe8e8;
+      color:#c91818;
+      border-radius:var(--radius);
+      padding:10px 13px;
+      font-weight:900;
+      white-space:nowrap;
     }
 
     .error {
-      display: none;
-      margin-top: 12px;
-      color: #c91818;
-      font-weight: 800;
-      font-size: 13px;
+      display:none;
+      margin-top:12px;
+      color:#c91818;
+      font-weight:800;
+      font-size:13px;
     }
 
-    .app {
-      display: none;
-      min-height: 100vh;
-    }
+    .app { display:none; min-height:100vh; }
 
     .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: var(--navy);
-      color: #ffffff;
-      border-bottom: 4px solid var(--sky);
-      box-shadow: 0 10px 30px rgba(7, 29, 58, .18);
+      position:sticky;
+      top:0;
+      z-index:20;
+      background:var(--navy);
+      color:#fff;
+      border-bottom:4px solid var(--sky);
+      box-shadow:0 10px 30px rgba(7,29,58,.18);
     }
 
     .top-inner {
-      max-width: 1440px;
-      margin: 0 auto;
-      padding: 16px 22px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 18px;
+      max-width:1440px;
+      margin:0 auto;
+      padding:16px 22px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:18px;
     }
 
     .top-left {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      min-width: 0;
+      display:flex;
+      align-items:center;
+      gap:15px;
     }
 
     .top-left img {
-      width: 150px;
-      height: auto;
-      background: #ffffff;
-      border-radius: 6px;
-      padding: 5px 8px;
+      width:150px;
+      background:#fff;
+      border-radius:6px;
+      padding:5px 8px;
     }
 
     .top-title h1 {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 900;
-      white-space: nowrap;
+      margin:0;
+      font-size:20px;
+      font-weight:900;
     }
 
     .top-title p {
-      margin: 3px 0 0;
-      color: #b9d9ee;
-      font-size: 13px;
+      margin:3px 0 0;
+      color:#b9d9ee;
+      font-size:13px;
     }
 
     .top-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-      justify-content: flex-end;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
     }
 
     .top-tab {
-      background: rgba(255, 255, 255, .10);
-      color: #dbeafe;
-      border-radius: var(--radius);
-      padding: 10px 13px;
-      font-weight: 900;
+      background:rgba(255,255,255,.10);
+      color:#dbeafe;
+      border-radius:var(--radius);
+      padding:10px 13px;
+      font-weight:900;
     }
 
     .top-tab.active {
-      background: #ffffff;
-      color: var(--navy);
+      background:#fff;
+      color:var(--navy);
     }
 
     .wrap {
-      max-width: 1440px;
-      margin: 0 auto;
-      padding: 22px;
+      max-width:1440px;
+      margin:0 auto;
+      padding:22px;
     }
 
-    .view {
-      display: none;
-    }
-
-    .view.active {
-      display: block;
-    }
+    .view { display:none; }
+    .view.active { display:block; }
 
     .kpis {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 13px;
-      margin-bottom: 15px;
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:13px;
+      margin-bottom:15px;
     }
 
     .kpi {
-      background: #ffffff;
-      border: 1px solid var(--line);
-      border-left: 5px solid var(--sky);
-      border-radius: var(--radius);
-      padding: 16px;
-      box-shadow: 0 10px 25px rgba(7, 29, 58, .06);
+      background:#fff;
+      border:1px solid var(--line);
+      border-left:5px solid var(--sky);
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow:0 10px 25px rgba(7,29,58,.06);
     }
 
     .kpi b {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 8px;
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:8px;
     }
 
     .kpi strong {
-      font-size: 30px;
-      color: var(--navy);
+      font-size:30px;
+      color:var(--navy);
     }
 
     .charts {
-      display: grid;
-      grid-template-columns: 360px 1fr;
-      gap: 15px;
-      margin-bottom: 15px;
+      display:grid;
+      grid-template-columns:360px 1fr;
+      gap:15px;
+      margin-bottom:15px;
     }
 
-    .panel,
-    .toolbar,
-    .table-card,
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: 0 14px 36px rgba(7, 29, 58, .08);
+    .panel,.toolbar,.table-card,.power-card {
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:0 14px 36px rgba(7,29,58,.08);
     }
 
     .panel {
-      padding: 16px;
-      min-width: 0;
+      padding:16px;
+      min-width:0;
     }
 
-    .panel h2,
-    .card h2 {
-      margin: 0 0 12px;
-      color: var(--navy);
-      font-size: 16px;
-      font-weight: 900;
+    .panel h2 {
+      margin:0 0 12px;
+      color:var(--navy);
+      font-size:16px;
+      font-weight:900;
     }
 
     .chart {
-      height: 260px;
-      position: relative;
+      height:260px;
+      position:relative;
     }
 
     .toolbar {
-      padding: 14px;
-      margin-bottom: 15px;
+      padding:14px;
+      margin-bottom:15px;
     }
 
     .quick {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 12px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
     }
 
     .filters {
-      display: grid;
-      grid-template-columns: 1.25fr .85fr .85fr .85fr .85fr 1.25fr auto auto auto;
-      gap: 9px;
-      align-items: end;
+      display:grid;
+      grid-template-columns:1.25fr .85fr .85fr .85fr .85fr 1.25fr auto auto auto;
+      gap:9px;
+      align-items:end;
     }
 
-    .filters .field {
-      margin-bottom: 0;
-    }
+    .filters .field { margin-bottom:0; }
 
     .date-pair {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 7px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:7px;
     }
 
-    .table-card {
-      overflow: hidden;
-    }
+    .table-card { overflow:hidden; }
 
     .table-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--line);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
     }
 
     .table-head h2 {
-      font-size: 16px;
-      margin: 0;
-      color: var(--navy);
-      font-weight: 900;
+      margin:0;
+      color:var(--navy);
+      font-size:16px;
+      font-weight:900;
     }
 
     .result-text {
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 800;
+      color:var(--muted);
+      font-size:13px;
+      font-weight:800;
     }
 
-    .table-wrap {
-      overflow: auto;
-    }
+    .table-wrap { overflow:auto; }
 
     table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 980px;
+      width:100%;
+      border-collapse:collapse;
+      min-width:980px;
     }
 
-    th,
-    td {
-      padding: 12px 13px;
-      border-bottom: 1px solid var(--line);
-      font-size: 13px;
-      text-align: left;
-      white-space: nowrap;
-      vertical-align: middle;
+    th,td {
+      padding:12px 13px;
+      border-bottom:1px solid var(--line);
+      font-size:13px;
+      text-align:left;
+      white-space:nowrap;
+      vertical-align:middle;
     }
 
     th {
-      background: #f2f6fb;
-      color: #10233f;
-      font-weight: 900;
+      background:#f2f6fb;
+      color:#10233f;
+      font-weight:900;
     }
 
-    tbody tr:hover {
-      background: #f8fbff;
-    }
+    tbody tr:hover { background:#f8fbff; }
 
     .ticket-link {
-      background: transparent;
-      color: #1f55e6;
-      font-weight: 900;
-      padding: 0;
-      text-align: left;
+      background:transparent;
+      color:#1f55e6;
+      font-weight:900;
+      padding:0;
     }
 
     .clip {
-      max-width: 230px;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      max-width:230px;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
     .pill {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 96px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 900;
-      white-space: nowrap;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:96px;
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:900;
+      white-space:nowrap;
     }
 
-    .s-received {
-      background: #fff1ca;
-      color: #b06a00;
-    }
-
-    .s-checking {
-      background: #e7f0ff;
-      color: #245bd6;
-    }
-
-    .s-customer {
-      background: #eee3ff;
-      color: #6d28d9;
-    }
-
-    .s-done {
-      background: #daf5e8;
-      color: #08784f;
-    }
+    .s-received { background:#fff1ca; color:#b06a00; }
+    .s-checking { background:#e7f0ff; color:#245bd6; }
+    .s-customer { background:#eee3ff; color:#6d28d9; }
+    .s-done { background:#daf5e8; color:#08784f; }
 
     .remind {
-      background: #ffe3e8;
-      color: #d0163f;
-      border-radius: 999px;
-      padding: 6px 9px;
-      font-size: 12px;
-      font-weight: 900;
+      background:#ffe3e8;
+      color:#d0163f;
+      border-radius:999px;
+      padding:6px 9px;
+      font-size:12px;
+      font-weight:900;
     }
 
     .empty {
-      display: none;
-      padding: 34px 12px;
-      text-align: center;
-      color: var(--muted);
-      font-weight: 800;
+      display:none;
+      padding:34px 12px;
+      text-align:center;
+      color:var(--muted);
+      font-weight:800;
     }
 
     .analytics-layout {
-      display: grid;
-      grid-template-columns: 280px 1fr;
-      gap: 15px;
+      display:grid;
+      grid-template-columns:280px 1fr;
+      gap:15px;
     }
 
     .side {
-      background: var(--navy);
-      color: #ffffff;
-      border-radius: var(--radius);
-      padding: 16px;
-      box-shadow: var(--shadow);
-      align-self: start;
-      position: sticky;
-      top: 92px;
+      background:var(--navy);
+      color:#fff;
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow:var(--shadow);
+      align-self:start;
+      position:sticky;
+      top:92px;
     }
 
     .side h2 {
-      margin: 0 0 14px;
-      font-size: 17px;
+      margin:0 0 14px;
+      font-size:17px;
     }
 
-    .side label {
-      color: #cfe4f4;
-    }
+    .side label { color:#cfe4f4; }
 
-    .side input,
-    .side select {
-      background: #0e3768;
-      border-color: #315a88;
-      color: #ffffff;
+    .side input,.side select {
+      background:#0e3768;
+      border-color:#315a88;
+      color:#fff;
     }
 
     .side .ghost {
-      background: #173f72;
-      color: #ffffff;
+      background:#173f72;
+      color:#fff;
     }
 
     .power-kpis {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 12px;
-      margin-bottom: 15px;
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:12px;
+      margin-bottom:15px;
     }
 
     .power-card {
-      background: #ffffff;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 15px;
-      box-shadow: 0 10px 25px rgba(7, 29, 58, .06);
+      padding:15px;
     }
 
     .power-card b {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 7px;
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:7px;
     }
 
     .power-card strong {
-      font-size: 26px;
-      color: var(--navy);
+      font-size:26px;
+      color:var(--navy);
     }
 
     .analytics-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      margin-bottom: 15px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:15px;
+      margin-bottom:15px;
     }
 
     dialog {
-      border: 0;
-      border-radius: 14px;
-      padding: 0;
-      width: min(760px, calc(100vw - 24px));
-      box-shadow: 0 28px 80px rgba(0, 0, 0, .28);
+      border:0;
+      border-radius:14px;
+      padding:0;
+      width:min(760px,calc(100vw - 24px));
+      box-shadow:0 28px 80px rgba(0,0,0,.28);
     }
 
-    dialog::backdrop {
-      background: rgba(7, 20, 38, .48);
-    }
+    dialog::backdrop { background:rgba(7,20,38,.48); }
 
     .modal-head {
-      background: var(--navy);
-      color: #ffffff;
-      padding: 18px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      border-bottom: 4px solid var(--sky);
+      background:var(--navy);
+      color:#fff;
+      padding:18px 20px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      border-bottom:4px solid var(--sky);
     }
 
     .modal-head h2 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 900;
+      margin:0;
+      font-size:18px;
+      font-weight:900;
     }
 
-    .modal-body {
-      padding: 18px 20px;
-    }
+    .modal-body { padding:18px 20px; }
 
     .status-edit {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      margin-bottom: 14px;
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:10px;
+      margin-bottom:14px;
     }
 
     .detail-grid {
-      display: grid;
-      grid-template-columns: 140px 1fr;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      overflow: hidden;
-      margin-bottom: 15px;
+      display:grid;
+      grid-template-columns:140px 1fr;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      overflow:hidden;
+      margin-bottom:15px;
     }
 
-    .detail-grid b,
-    .detail-grid div {
-      padding: 11px 12px;
-      border-bottom: 1px solid var(--line);
-      font-size: 13px;
-      min-width: 0;
-      word-break: break-word;
+    .detail-grid b,.detail-grid div {
+      padding:11px 12px;
+      border-bottom:1px solid var(--line);
+      font-size:13px;
+      word-break:break-word;
     }
 
     .detail-grid b {
-      background: #f2f6fb;
-      color: #10233f;
-    }
-
-    .detail-grid b:last-of-type,
-    .detail-grid div:last-child {
-      border-bottom: 0;
+      background:#f2f6fb;
+      color:#10233f;
     }
 
     .modal-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      flex-wrap: wrap;
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
     }
 
-    @media (max-width: 1120px) {
-      .kpis,
-      .power-kpis {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .charts,
-      .analytics-layout,
-      .analytics-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .side {
-        position: static;
-      }
-
-      .filters {
-        grid-template-columns: 1fr 1fr;
-      }
+    @media(max-width:1120px) {
+      .kpis,.power-kpis { grid-template-columns:repeat(2,1fr); }
+      .charts,.analytics-layout,.analytics-grid { grid-template-columns:1fr; }
+      .side { position:static; }
+      .filters { grid-template-columns:1fr 1fr; }
     }
 
-    @media (max-width: 680px) {
-      .top-inner {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .top-left img {
-        width: 132px;
-      }
-
-      .wrap {
-        padding: 14px;
-      }
-
-      .kpis,
-      .power-kpis,
-      .filters,
-      .date-pair,
-      .status-edit {
-        grid-template-columns: 1fr;
-      }
-
-      .top-actions,
-      .modal-actions {
-        width: 100%;
-      }
-
-      .top-actions button,
-      .modal-actions button,
-      .modal-actions a,
-      .filters button {
-        width: 100%;
-      }
+    @media(max-width:680px) {
+      .top-inner { flex-direction:column; align-items:flex-start; }
+      .top-left img { width:132px; }
+      .wrap { padding:14px; }
+      .kpis,.power-kpis,.filters,.date-pair,.status-edit { grid-template-columns:1fr; }
+      .top-actions,.modal-actions { width:100%; }
+      .top-actions button,.modal-actions button,.modal-actions a,.filters button { width:100%; }
     }
   </style>
 </head>
@@ -681,11 +555,7 @@
   <section id="loginPage" class="login-page">
     <div class="login-card">
       <div class="brand">
-        <img
-          src="assets/maersk-logo.png"
-          alt="MAERSK"
-          onerror="this.style.display='none';document.getElementById('loginBrandFallback').style.display='block';"
-        />
+        <img src="assets/maersk-logo.png" alt="MAERSK" onerror="this.style.display='none';document.getElementById('loginBrandFallback').style.display='block';" />
         <div id="loginBrandFallback" class="brand-fallback">MAERSK</div>
       </div>
 
@@ -713,11 +583,7 @@
     <header class="topbar">
       <div class="top-inner">
         <div class="top-left">
-          <img
-            src="assets/maersk-logo.png"
-            alt="MAERSK"
-            onerror="this.outerHTML='<strong style=&quot;font-size:26px;&quot;>MAERSK</strong>';"
-          />
+          <img src="assets/maersk-logo.png" alt="MAERSK" onerror="this.outerHTML='<strong style=&quot;font-size:26px;&quot;>MAERSK</strong>';" />
           <div class="top-title">
             <h1>RT Ticket Admin</h1>
             <p>Operations and analytics</p>
@@ -735,40 +601,21 @@
     <main class="wrap">
       <section id="operations" class="view active">
         <div class="kpis">
-          <div class="kpi">
-            <b>전체 티켓</b>
-            <strong id="kpiTotal">0</strong>
-          </div>
-
-          <div class="kpi">
-            <b>접수</b>
-            <strong id="kpiReceived">0</strong>
-          </div>
-
-          <div class="kpi">
-            <b>내용 확인 중</b>
-            <strong id="kpiChecking">0</strong>
-          </div>
-
-          <div class="kpi">
-            <b>완료</b>
-            <strong id="kpiDone">0</strong>
-          </div>
+          <div class="kpi"><b>전체 티켓</b><strong id="kpiTotal">0</strong></div>
+          <div class="kpi"><b>접수</b><strong id="kpiReceived">0</strong></div>
+          <div class="kpi"><b>내용 확인 중</b><strong id="kpiChecking">0</strong></div>
+          <div class="kpi"><b>완료</b><strong id="kpiDone">0</strong></div>
         </div>
 
         <div class="charts">
           <div class="panel">
             <h2>Status Overview</h2>
-            <div class="chart">
-              <canvas id="statusChart"></canvas>
-            </div>
+            <div class="chart"><canvas id="statusChart"></canvas></div>
           </div>
 
           <div class="panel">
             <h2>Category Volume</h2>
-            <div class="chart">
-              <canvas id="categoryChart"></canvas>
-            </div>
+            <div class="chart"><canvas id="categoryChart"></canvas></div>
           </div>
         </div>
 
@@ -914,13 +761,13 @@
               </div>
 
               <div class="power-card">
-                <b>Total SKU</b>
-                <strong id="analyticsTotalSku">0</strong>
+                <b>Bulk Labels</b>
+                <strong id="analyticsBulkCount">0</strong>
               </div>
 
               <div class="power-card">
-                <b>Bulk Labels</b>
-                <strong id="analyticsBulkCount">0</strong>
+                <b>Processing</b>
+                <strong id="analyticsProcessing">0</strong>
               </div>
 
               <div class="power-card">
@@ -937,30 +784,22 @@
             <div class="analytics-grid">
               <div class="panel">
                 <h2>Daily Ticket Trend</h2>
-                <div class="chart">
-                  <canvas id="dailyChart"></canvas>
-                </div>
+                <div class="chart"><canvas id="dailyChart"></canvas></div>
               </div>
 
               <div class="panel">
                 <h2>Status Mix</h2>
-                <div class="chart">
-                  <canvas id="analyticsStatusChart"></canvas>
-                </div>
+                <div class="chart"><canvas id="analyticsStatusChart"></canvas></div>
               </div>
 
               <div class="panel">
                 <h2>SKU Volume by Category</h2>
-                <div class="chart">
-                  <canvas id="skuCategoryChart"></canvas>
-                </div>
+                <div class="chart"><canvas id="skuCategoryChart"></canvas></div>
               </div>
 
               <div class="panel">
-                <h2>Top Bulk Labels</h2>
-                <div class="chart">
-                  <canvas id="bulkChart"></canvas>
-                </div>
+                <h2>Bulk Volume by Category</h2>
+                <div class="chart"><canvas id="bulkCategoryChart"></canvas></div>
               </div>
             </div>
 
@@ -1037,6 +876,7 @@
     ];
 
     let tickets = [];
+    let analyticsTickets = [];
     let skuItems = [];
     let currentTicket = null;
     let charts = {};
@@ -1071,11 +911,55 @@
 
     function setDefaultDates() {
       const today = todayString();
-
       $("dateFrom").value = today;
       $("dateTo").value = today;
       $("analyticsDateFrom").value = today;
       $("analyticsDateTo").value = today;
+    }
+
+    function normalizeBulk(value) {
+      return String(value || "").trim().toUpperCase();
+    }
+
+    function uniqueBulkCount(rows) {
+      const set = new Set();
+
+      rows.forEach(row => {
+        const bulk = normalizeBulk(row.bulkLabel);
+
+        if (bulk) {
+          set.add(bulk);
+        }
+      });
+
+      return set.size;
+    }
+
+    function bulkVolumeByCategory(rows) {
+      const map = {};
+
+      rows.forEach(row => {
+        const category = row.category || "미분류";
+        const bulk = normalizeBulk(row.bulkLabel);
+
+        if (!bulk) {
+          return;
+        }
+
+        if (!map[category]) {
+          map[category] = new Set();
+        }
+
+        map[category].add(bulk);
+      });
+
+      const result = {};
+
+      Object.keys(map).forEach(category => {
+        result[category] = map[category].size;
+      });
+
+      return result;
     }
 
     function statusPill(status) {
@@ -1320,15 +1204,11 @@
           },
           scales: isDoughnut ? {} : {
             x: {
-              grid: {
-                display: false
-              }
+              grid: { display: false }
             },
             y: {
               beginAtZero: true,
-              ticks: {
-                precision: 0
-              }
+              ticks: { precision: 0 }
             }
           }
         }
@@ -1376,9 +1256,7 @@
     }
 
     $("statusUpdateBtn").addEventListener("click", async () => {
-      if (!currentTicket) {
-        return;
-      }
+      if (!currentTicket) return;
 
       const nextStatus = $("detailStatus").value;
 
@@ -1402,9 +1280,7 @@
     });
 
     $("deleteBtn").addEventListener("click", async () => {
-      if (!currentTicket) {
-        return;
-      }
+      if (!currentTicket) return;
 
       if (!confirm(`${currentTicket.ticketId} 티켓을 삭제할까요?`)) {
         return;
@@ -1429,9 +1305,13 @@
       $("emptySku").style.display = "none";
 
       try {
-        const data = await api("listItems", analyticsFilters());
+        const filters = analyticsFilters();
 
-        skuItems = Array.isArray(data.items) ? data.items : [];
+        const ticketData = await api("list", filters);
+        const itemData = await api("listItems", filters);
+
+        analyticsTickets = Array.isArray(ticketData.tickets) ? ticketData.tickets : [];
+        skuItems = Array.isArray(itemData.items) ? itemData.items : [];
 
         renderAnalytics();
       } catch (err) {
@@ -1440,37 +1320,36 @@
     }
 
     function renderAnalytics() {
-      const uniqueTickets = new Set(skuItems.map(item => item.ticketId).filter(Boolean));
-      const uniqueBulk = new Set(skuItems.map(item => item.bulkLabel).filter(Boolean));
-      const doneTickets = new Set(
-        skuItems
-          .filter(item => item.status === "완료")
-          .map(item => item.ticketId)
-          .filter(Boolean)
-      );
+      const statusCounts = countBy(analyticsTickets, ticket => ticket.status || "접수");
+      const dailyTickets = countBy(analyticsTickets, ticket => String(ticket.date || "").slice(0, 10) || "미분류");
+      const skuByCategory = countBy(skuItems, item => item.category || "미분류");
+      const bulkByCategory = bulkVolumeByCategory(analyticsTickets);
 
-      $("analyticsTotalTickets").textContent = uniqueTickets.size;
-      $("analyticsTotalSku").textContent = skuItems.length;
-      $("analyticsBulkCount").textContent = uniqueBulk.size;
-      $("analyticsReminderCount").textContent = skuItems.filter(item => item.reminded === "Y").length;
-      $("analyticsCompleteRate").textContent = uniqueTickets.size
-        ? `${Math.round(doneTickets.size / uniqueTickets.size * 100)}%`
+      const processing =
+        (statusCounts["접수"] || 0) +
+        (statusCounts["내용 확인 중"] || 0) +
+        (statusCounts["고객사 확인 중"] || 0);
+
+      const done = statusCounts["완료"] || 0;
+      const total = analyticsTickets.length;
+
+      $("analyticsTotalTickets").textContent = total;
+      $("analyticsBulkCount").textContent = uniqueBulkCount(analyticsTickets);
+      $("analyticsProcessing").textContent = processing;
+      $("analyticsReminderCount").textContent = analyticsTickets.filter(ticket => {
+        return String(ticket.history || "").includes("[리마인드]");
+      }).length;
+
+      $("analyticsCompleteRate").textContent = total
+        ? `${Math.round(done / total * 100)}%`
         : "0%";
 
-      const byDate = countBy(skuItems, item => String(item.date || "").slice(0, 10) || "미분류");
-      const byStatus = countBy(skuItems, item => item.status || "접수");
-      const byCategory = countBy(skuItems, item => item.category || "미분류");
-      const byBulk = countBy(skuItems, item => item.bulkLabel || "미분류");
+      const dateLabels = Object.keys(dailyTickets).sort();
 
-      const dateLabels = Object.keys(byDate).sort();
-      const topBulk = Object.entries(byBulk)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10);
-
-      drawChart("dailyChart", "line", dateLabels, dateLabels.map(label => byDate[label]));
-      drawChart("analyticsStatusChart", "doughnut", Object.keys(byStatus), Object.values(byStatus));
-      drawChart("skuCategoryChart", "bar", Object.keys(byCategory), Object.values(byCategory));
-      drawChart("bulkChart", "bar", topBulk.map(item => item[0]), topBulk.map(item => item[1]));
+      drawChart("dailyChart", "line", dateLabels, dateLabels.map(label => dailyTickets[label]));
+      drawChart("analyticsStatusChart", "doughnut", Object.keys(statusCounts), Object.values(statusCounts));
+      drawChart("skuCategoryChart", "bar", Object.keys(skuByCategory), Object.values(skuByCategory));
+      drawChart("bulkCategoryChart", "bar", Object.keys(bulkByCategory), Object.values(bulkByCategory));
 
       renderSkuTable();
     }
@@ -1515,10 +1394,7 @@
     }
 
     function downloadText(filename, text) {
-      const blob = new Blob([text], {
-        type: "text/csv;charset=utf-8"
-      });
-
+      const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
 
@@ -1531,8 +1407,8 @@
       URL.revokeObjectURL(url);
     }
 
-    function ticketCsvRows() {
-      return tickets.map(ticket => ({
+    function ticketCsvRows(rows) {
+      return rows.map(ticket => ({
         ticketId: ticket.ticketId,
         date: ticket.date,
         category: ticket.category,
@@ -1562,7 +1438,7 @@
     }
 
     $("ticketsCsvBtn").addEventListener("click", () => {
-      const csv = toCsv(ticketCsvRows(), [
+      const csv = toCsv(ticketCsvRows(tickets), [
         { key: "ticketId", label: "Ticket ID" },
         { key: "date", label: "Date" },
         { key: "category", label: "Category" },
@@ -1581,9 +1457,7 @@
     $("skuCsvBtn").addEventListener("click", async () => {
       try {
         const data = await api("listItems", operationFilters());
-        const rows = itemCsvRows(data.items || []);
-
-        const csv = toCsv(rows, [
+        const csv = toCsv(itemCsvRows(data.items || []), [
           { key: "ticketId", label: "Ticket ID" },
           { key: "date", label: "Date" },
           { key: "category", label: "Category" },
@@ -1603,26 +1477,26 @@
     });
 
     $("analyticsCsvBtn").addEventListener("click", () => {
-      const csv = toCsv(itemCsvRows(skuItems), [
+      const csv = toCsv(ticketCsvRows(analyticsTickets), [
         { key: "ticketId", label: "Ticket ID" },
         { key: "date", label: "Date" },
         { key: "category", label: "Category" },
         { key: "bulkLabel", label: "Bulk Label" },
         { key: "sku", label: "SKU" },
         { key: "creatorId", label: "Creator ID" },
+        { key: "image", label: "Image" },
+        { key: "comment", label: "Comment" },
         { key: "status", label: "Status" },
-        { key: "reminded", label: "Reminded" }
+        { key: "history", label: "History" }
       ]);
 
-      downloadText(`rt_analytics_${todayString()}.csv`, csv);
+      downloadText(`rt_analytics_tickets_${todayString()}.csv`, csv);
     });
 
     $("analyticsSkuCsvBtn").addEventListener("click", async () => {
       try {
         const data = await api("listItems", analyticsFilters());
-        const rows = itemCsvRows(data.items || []);
-
-        const csv = toCsv(rows, [
+        const csv = toCsv(itemCsvRows(data.items || []), [
           { key: "ticketId", label: "Ticket ID" },
           { key: "date", label: "Date" },
           { key: "category", label: "Category" },
@@ -1693,12 +1567,10 @@
 
     $("status").addEventListener("change", loadTickets);
 
-    ["analyticsKeyword"].forEach(id => {
-      $(id).addEventListener("keydown", event => {
-        if (event.key === "Enter") {
-          loadAnalytics();
-        }
-      });
+    $("analyticsKeyword").addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        loadAnalytics();
+      }
     });
 
     ["analyticsCategory", "analyticsStatus"].forEach(id => {
