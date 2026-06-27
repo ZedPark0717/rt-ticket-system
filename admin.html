@@ -38,11 +38,7 @@
 
     .hidden { display: none !important; }
 
-    button,
-    input,
-    select {
-      font: inherit;
-    }
+    button, input, select { font: inherit; }
 
     button {
       border: 0;
@@ -56,32 +52,12 @@
       white-space: nowrap;
     }
 
-    button.primary {
-      background: var(--navy);
-      color: #fff;
-    }
+    button.primary { background: var(--navy); color: #fff; }
+    button.primary:hover { background: var(--navy2); }
+    button.danger { background: #fee2e2; color: var(--red); }
+    button:disabled { opacity: .6; cursor: progress; }
 
-    button.primary:hover {
-      background: var(--navy2);
-    }
-
-    button.sky {
-      background: var(--sky);
-      color: var(--navy);
-    }
-
-    button.danger {
-      background: #fee2e2;
-      color: var(--red);
-    }
-
-    button:disabled {
-      opacity: .6;
-      cursor: progress;
-    }
-
-    input,
-    select {
+    input, select {
       width: 100%;
       min-height: 40px;
       border: 1px solid var(--line);
@@ -92,8 +68,7 @@
       outline: none;
     }
 
-    input:focus,
-    select:focus {
+    input:focus, select:focus {
       border-color: var(--sky);
       box-shadow: 0 0 0 3px rgba(53,190,217,.18);
     }
@@ -226,10 +201,7 @@
       line-height: 1.55;
     }
 
-    .login-form {
-      display: grid;
-      gap: 14px;
-    }
+    .login-form { display: grid; gap: 14px; }
 
     .login-error {
       display: none;
@@ -242,9 +214,7 @@
       font-weight: 800;
     }
 
-    .app-shell {
-      min-height: 100vh;
-    }
+    .app-shell { min-height: 100vh; }
 
     header {
       position: sticky;
@@ -256,7 +226,7 @@
     }
 
     .wrap {
-      width: min(1280px, 100%);
+      width: min(1320px, 100%);
       margin: 0 auto;
       padding: 16px;
     }
@@ -268,12 +238,7 @@
       gap: 14px;
     }
 
-    h1,
-    h2 {
-      margin: 0;
-      letter-spacing: 0;
-    }
-
+    h1, h2 { margin: 0; letter-spacing: 0; }
     h1 { font-size: 21px; }
     h2 { font-size: 16px; }
 
@@ -308,6 +273,29 @@
       font-weight: 900;
     }
 
+    .main-tabs {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      padding: 5px;
+      background: #dfe8f3;
+      border-radius: 10px;
+      width: fit-content;
+    }
+
+    .main-tab {
+      min-width: 128px;
+      background: transparent;
+      color: #526070;
+      border-radius: 7px;
+    }
+
+    .main-tab.active {
+      background: #fff;
+      color: var(--navy);
+      box-shadow: 0 3px 12px rgba(15,23,42,.08);
+    }
+
     .dashboard {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -315,8 +303,7 @@
       margin: 14px 0;
     }
 
-    .metric,
-    .panel {
+    .metric, .panel {
       background: rgba(255,255,255,.96);
       border: 1px solid var(--line);
       border-radius: 10px;
@@ -396,10 +383,7 @@
       color: var(--navy);
     }
 
-    .list {
-      display: grid;
-      gap: 8px;
-    }
+    .list { display: grid; gap: 8px; }
 
     .ticket-row {
       display: grid;
@@ -466,6 +450,180 @@
       color: var(--muted);
     }
 
+    .analytics-shell {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .analytics-side {
+      background: var(--navy);
+      color: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      display: grid;
+      align-content: start;
+      gap: 14px;
+      min-height: 720px;
+    }
+
+    .analytics-side h2 {
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .analytics-side .side-sub {
+      color: #bdd5e3;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .side-filter {
+      display: grid;
+      gap: 7px;
+    }
+
+    .side-filter label {
+      color: #dff7fb;
+      font-size: 12px;
+    }
+
+    .side-filter select,
+    .side-filter input {
+      background: rgba(255,255,255,.08);
+      color: #fff;
+      border-color: rgba(255,255,255,.2);
+    }
+
+    .side-filter option {
+      color: #07162d;
+    }
+
+    .analytics-main {
+      display: grid;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .analytics-title {
+      background:
+        linear-gradient(135deg, rgba(7,22,45,.98), rgba(11,35,66,.95)),
+        radial-gradient(circle at 90% 10%, rgba(53,190,217,.35), transparent 30%);
+      color: #fff;
+      border-radius: 12px;
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow);
+      border-bottom: 5px solid var(--sky);
+    }
+
+    .analytics-title h2 {
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+
+    .analytics-title p {
+      margin: 0;
+      color: #cfe0ee;
+      font-size: 13px;
+    }
+
+    .analytics-title img {
+      height: 42px;
+      width: auto;
+      background: #fff;
+      border-radius: 5px;
+      padding: 4px;
+    }
+
+    .analytics-kpis {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .analytics-kpi {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 13px;
+      box-shadow: 0 10px 26px rgba(7,22,45,.08);
+      display: grid;
+      gap: 6px;
+      min-height: 92px;
+    }
+
+    .analytics-kpi span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .analytics-kpi strong {
+      font-size: 26px;
+      line-height: 1;
+      color: var(--navy);
+    }
+
+    .analytics-kpi small {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr);
+      gap: 12px;
+    }
+
+    .analytics-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      box-shadow: 0 10px 26px rgba(7,22,45,.08);
+      min-width: 0;
+    }
+
+    .analytics-card h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      color: var(--navy);
+    }
+
+    .analytics-chart {
+      height: 260px;
+    }
+
+    .analytics-table {
+      display: grid;
+      gap: 7px;
+      max-height: 330px;
+      overflow: auto;
+    }
+
+    .analytics-table-row {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px;
+      background: #fbfdff;
+      font-size: 12px;
+    }
+
+    .analytics-table-row b {
+      color: var(--blue);
+    }
+
     dialog {
       width: min(820px, calc(100% - 28px));
       border: 0;
@@ -478,13 +636,8 @@
       background: rgba(15,23,42,.45);
     }
 
-    .modal {
-      padding: 20px;
-    }
-
-    .modal h2 {
-      margin-bottom: 12px;
-    }
+    .modal { padding: 20px; }
+    .modal h2 { margin-bottom: 12px; }
 
     .detail {
       display: grid;
@@ -493,14 +646,8 @@
       margin: 14px 0;
     }
 
-    .detail b {
-      color: #344054;
-    }
-
-    .pre {
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
+    .detail b { color: #344054; }
+    .pre { white-space: pre-wrap; word-break: break-word; }
 
     .status-line {
       display: grid;
@@ -517,49 +664,23 @@
       margin-top: 14px;
     }
 
+    @media (max-width: 1100px) {
+      .analytics-kpis { grid-template-columns: repeat(3, 1fr); }
+      .analytics-grid { grid-template-columns: 1fr; }
+      .analytics-shell { grid-template-columns: 1fr; }
+      .analytics-side { min-height: auto; }
+    }
+
     @media (max-width: 960px) {
-      .login-shell {
-        grid-template-columns: 1fr;
-      }
-
-      .login-visual {
-        min-height: 320px;
-        padding: 30px;
-      }
-
-      .login-panel-wrap {
-        padding: 18px;
-      }
-
-      .dashboard {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .charts,
-      .toolbar,
-      .filters {
-        grid-template-columns: 1fr;
-      }
-
-      .range {
-        justify-content: flex-start;
-      }
-
-      .ticket-row {
-        grid-template-columns: 1fr;
-        gap: 6px;
-      }
-
-      .topbar {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .top-actions {
-        width: 100%;
-        justify-content: space-between;
-        flex-wrap: wrap;
-      }
+      .login-shell { grid-template-columns: 1fr; }
+      .login-visual { min-height: 320px; padding: 30px; }
+      .login-panel-wrap { padding: 18px; }
+      .dashboard { grid-template-columns: repeat(2, 1fr); }
+      .charts, .toolbar, .filters { grid-template-columns: 1fr; }
+      .range { justify-content: flex-start; }
+      .ticket-row { grid-template-columns: 1fr; gap: 6px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .top-actions { width: 100%; justify-content: space-between; flex-wrap: wrap; }
     }
 
     @media (max-width: 560px) {
@@ -569,6 +690,9 @@
       .logo img { height: 36px; }
       .status-line { grid-template-columns: 1fr; }
       .hero-copy h1 { font-size: 34px; }
+      .analytics-kpis { grid-template-columns: 1fr 1fr; }
+      .analytics-title { align-items: flex-start; flex-direction: column; }
+      .analytics-table-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -585,8 +709,8 @@
         <p>티켓 상태 변경, 리마인드 확인, 사진 폴더 접근, 삭제까지 admin 권한으로 관리합니다.</p>
         <div class="login-badges">
           <span class="login-badge">Dashboard</span>
+          <span class="login-badge">Analytics</span>
           <span class="login-badge">Status Control</span>
-          <span class="login-badge">Reminder Monitor</span>
           <span class="login-badge">Admin Only</span>
         </div>
       </div>
@@ -622,6 +746,10 @@
         <div>
           <h1>RT Ticket Admin</h1>
           <div class="sub">운영 현황 및 티켓 관리</div>
+          <div class="main-tabs">
+            <button class="main-tab active" type="button" data-admin-view="operationsView">Operations</button>
+            <button class="main-tab" type="button" data-admin-view="analyticsView">Analytics</button>
+          </div>
         </div>
 
         <div class="top-actions">
@@ -633,69 +761,166 @@
     </header>
 
     <main class="wrap">
-      <section class="dashboard">
-        <div class="metric"><span>접수</span><strong id="countOpen">0</strong></div>
-        <div class="metric"><span>내용 확인 중</span><strong id="countCheck">0</strong></div>
-        <div class="metric"><span>고객사 확인 중</span><strong id="countClient">0</strong></div>
-        <div class="metric"><span>완료</span><strong id="countDone">0</strong></div>
-      </section>
+      <section id="operationsView">
+        <section class="dashboard">
+          <div class="metric"><span>접수</span><strong id="countOpen">0</strong></div>
+          <div class="metric"><span>내용 확인 중</span><strong id="countCheck">0</strong></div>
+          <div class="metric"><span>고객사 확인 중</span><strong id="countClient">0</strong></div>
+          <div class="metric"><span>완료</span><strong id="countDone">0</strong></div>
+        </section>
 
-      <section class="charts">
-        <div class="panel">
-          <h2>Status Overview</h2>
-          <div class="chartbox"><canvas id="statusChart"></canvas></div>
-        </div>
-        <div class="panel">
-          <h2>Category Volume</h2>
-          <div class="chartbox"><canvas id="categoryChart"></canvas></div>
-        </div>
-      </section>
+        <section class="charts">
+          <div class="panel">
+            <h2>Status Overview</h2>
+            <div class="chartbox"><canvas id="statusChart"></canvas></div>
+          </div>
+          <div class="panel">
+            <h2>Category Volume</h2>
+            <div class="chartbox"><canvas id="categoryChart"></canvas></div>
+          </div>
+        </section>
 
-      <section class="panel">
-        <div class="toolbar">
-          <div class="filters">
-            <label>검색
-              <input id="keyword" placeholder="Ticket ID, 날짜, SKU, 코멘트">
-            </label>
+        <section class="panel">
+          <div class="toolbar">
+            <div class="filters">
+              <label>검색
+                <input id="keyword" placeholder="Ticket ID, 날짜, SKU, 코멘트">
+              </label>
 
-            <label>Bulk Label
-              <input id="bulkLabel" placeholder="벌크라벨">
-            </label>
+              <label>Bulk Label
+                <input id="bulkLabel" placeholder="벌크라벨">
+              </label>
 
-            <label>Ticket ID
-              <input id="ticketId" placeholder="RT-20260628">
-            </label>
+              <label>Ticket ID
+                <input id="ticketId" placeholder="RT-20260628">
+              </label>
 
-            <label>Status
-              <select id="status">
-                <option value="">전체</option>
-                <option>접수</option>
-                <option>내용 확인 중</option>
-                <option>고객사 확인 중</option>
-                <option>완료</option>
-              </select>
-            </label>
+              <label>Status
+                <select id="status">
+                  <option value="">전체</option>
+                  <option>접수</option>
+                  <option>내용 확인 중</option>
+                  <option>고객사 확인 중</option>
+                  <option>완료</option>
+                </select>
+              </label>
 
-            <label>리마인드
-              <select id="reminded">
-                <option value="">전체</option>
-                <option value="true">리마인드 건</option>
-              </select>
-            </label>
+              <label>리마인드
+                <select id="reminded">
+                  <option value="">전체</option>
+                  <option value="true">리마인드 건</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="range">
+              <button type="button" data-range="today">오늘</button>
+              <button type="button" data-range="1">1일</button>
+              <button type="button" data-range="7" class="active">7일</button>
+              <button type="button" data-range="30">30일</button>
+              <button type="button" data-range="all">전체</button>
+              <button class="primary" id="refreshBtn" type="button">새로고침</button>
+            </div>
           </div>
 
-          <div class="range">
-            <button type="button" data-range="today">오늘</button>
-            <button type="button" data-range="1">1일</button>
-            <button type="button" data-range="7" class="active">7일</button>
-            <button type="button" data-range="30">30일</button>
-            <button type="button" data-range="all">전체</button>
-            <button class="primary" id="refreshBtn" type="button">새로고침</button>
+          <div id="ticketList" class="list">
+            <div class="empty">데이터를 불러오는 중입니다.</div>
           </div>
-        </div>
+        </section>
+      </section>
 
-        <div id="ticketList" class="list">
-          <div class="empty">데이터를 불러오는 중입니다.</div>
+      <section id="analyticsView" class="hidden">
+        <div class="analytics-shell">
+          <aside class="analytics-side">
+            <div>
+              <h2>RT Ticket Analytics</h2>
+              <div class="side-sub">운영 티켓 데이터를 기준으로 현황과 병목을 확인합니다.</div>
+            </div>
+
+            <div class="side-filter">
+              <label>Date Range
+                <select id="analyticsRange">
+                  <option value="7">Last 7 Days</option>
+                  <option value="30">Last 30 Days</option>
+                  <option value="all">All</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="side-filter">
+              <label>Status
+                <select id="analyticsStatus">
+                  <option value="">All Status</option>
+                  <option>접수</option>
+                  <option>내용 확인 중</option>
+                  <option>고객사 확인 중</option>
+                  <option>완료</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="side-filter">
+              <label>Category
+                <select id="analyticsCategory">
+                  <option value="">All Category</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="side-filter">
+              <label>Ticket Search
+                <input id="analyticsSearch" placeholder="Ticket ID, SKU, Bulk">
+              </label>
+            </div>
+
+            <button class="sky" id="analyticsReset" type="button">Reset Filters</button>
+          </aside>
+
+          <div class="analytics-main">
+            <div class="analytics-title">
+              <div>
+                <h2>RT Ticket Analytics</h2>
+                <p>Power BI 스타일 분석 화면 · Operations 데이터 기반</p>
+              </div>
+              <img src="assets/maersk-logo.png" alt="MAERSK">
+            </div>
+
+            <section class="analytics-kpis">
+              <div class="analytics-kpi"><span>Total Tickets</span><strong id="aTotal">0</strong><small>selected period</small></div>
+              <div class="analytics-kpi"><span>Open</span><strong id="aOpen">0</strong><small>접수</small></div>
+              <div class="analytics-kpi"><span>In Review</span><strong id="aReview">0</strong><small>내용 확인 중</small></div>
+              <div class="analytics-kpi"><span>Client Check</span><strong id="aClient">0</strong><small>고객사 확인 중</small></div>
+              <div class="analytics-kpi"><span>Completed</span><strong id="aDone">0</strong><small>완료</small></div>
+              <div class="analytics-kpi"><span>Reminder</span><strong id="aReminder">0</strong><small>리마인드 건</small></div>
+            </section>
+
+            <section class="analytics-grid">
+              <div class="analytics-card">
+                <h3>Daily Ticket Trend</h3>
+                <div class="analytics-chart"><canvas id="analyticsTrendChart"></canvas></div>
+              </div>
+              <div class="analytics-card">
+                <h3>Status Distribution</h3>
+                <div class="analytics-chart"><canvas id="analyticsStatusChart"></canvas></div>
+              </div>
+            </section>
+
+            <section class="analytics-grid">
+              <div class="analytics-card">
+                <h3>Category Volume</h3>
+                <div class="analytics-chart"><canvas id="analyticsCategoryChart"></canvas></div>
+              </div>
+              <div class="analytics-card">
+                <h3>Reminder Tickets</h3>
+                <div id="analyticsReminderList" class="analytics-table"></div>
+              </div>
+            </section>
+
+            <section class="analytics-card">
+              <h3>Open Ticket List</h3>
+              <div id="analyticsOpenList" class="analytics-table"></div>
+            </section>
+          </div>
         </div>
       </section>
     </main>
@@ -736,10 +961,14 @@
       user: readStoredUser(),
       tickets: [],
       filtered: [],
+      analyticsFiltered: [],
       range: '7',
       selected: null,
       statusChart: null,
       categoryChart: null,
+      analyticsTrendChart: null,
+      analyticsStatusChart: null,
+      analyticsCategoryChart: null,
     };
 
     const $ = (selector) => document.querySelector(selector);
@@ -772,6 +1001,15 @@
       $('#logoutBtn').addEventListener('click', logout);
       $('#refreshBtn').addEventListener('click', loadTickets);
 
+      $$('.main-tab').forEach((button) => {
+        button.addEventListener('click', () => {
+          $$('.main-tab').forEach((item) => item.classList.toggle('active', item === button));
+          $('#operationsView').classList.toggle('hidden', button.dataset.adminView !== 'operationsView');
+          $('#analyticsView').classList.toggle('hidden', button.dataset.adminView !== 'analyticsView');
+          if (button.dataset.adminView === 'analyticsView') renderAnalytics();
+        });
+      });
+
       ['keyword', 'bulkLabel', 'ticketId'].forEach((id) => {
         $('#' + id).addEventListener('input', applyFilters);
       });
@@ -787,11 +1025,22 @@
         });
       });
 
+      ['analyticsRange', 'analyticsStatus', 'analyticsCategory', 'analyticsSearch'].forEach((id) => {
+        $('#' + id).addEventListener('input', renderAnalytics);
+        $('#' + id).addEventListener('change', renderAnalytics);
+      });
+
+      $('#analyticsReset').addEventListener('click', () => {
+        $('#analyticsRange').value = '7';
+        $('#analyticsStatus').value = '';
+        $('#analyticsCategory').value = '';
+        $('#analyticsSearch').value = '';
+        renderAnalytics();
+      });
+
       $('#saveStatus').addEventListener('click', saveStatus);
       $('#openPhoto').addEventListener('click', () => {
-        if (state.selected && state.selected.image) {
-          window.open(state.selected.image, '_blank', 'noopener');
-        }
+        if (state.selected && state.selected.image) window.open(state.selected.image, '_blank', 'noopener');
       });
       $('#deleteTicket').addEventListener('click', deleteSelectedTicket);
     }
@@ -811,7 +1060,7 @@
         const data = await rawApi('login', payload, false);
 
         if (data.user.role !== 'admin') {
-          throw new Error('Admin 권한이 없는 계정입니다.');
+          throw new Error('관리자 권한이 있는 계정만 접속할 수 있습니다.');
         }
 
         state.token = data.token;
@@ -856,6 +1105,7 @@
       state.user = null;
       state.tickets = [];
       state.filtered = [];
+      state.analyticsFiltered = [];
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
     }
@@ -866,7 +1116,9 @@
       try {
         const data = await api('list', {});
         state.tickets = (data.tickets || []).map(normalizeTicket);
+        populateAnalyticsCategories();
         applyFilters();
+        renderAnalytics();
       } catch (err) {
         $('#ticketList').innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`;
         handleAuthOnly(err);
@@ -910,7 +1162,7 @@
       });
 
       renderDashboard();
-      renderCharts();
+      renderOperationsCharts();
       renderList();
     }
 
@@ -923,14 +1175,9 @@
       $('#countDone').textContent = counts['완료'] || 0;
     }
 
-    function renderCharts() {
+    function renderOperationsCharts() {
       const statusCounts = countByStatus(state.filtered);
-
-      const categoryCounts = state.filtered.reduce((acc, ticket) => {
-        const key = normalizeCategory(ticket.category);
-        acc[key] = (acc[key] || 0) + 1;
-        return acc;
-      }, {});
+      const categoryCounts = countByCategory(state.filtered);
 
       state.statusChart = drawChart(
         state.statusChart,
@@ -973,6 +1220,125 @@
       $$('button[data-ticket]').forEach((button) => {
         button.addEventListener('click', () => showDetail(button.dataset.ticket));
       });
+    }
+
+    function renderAnalytics() {
+      if (!state.tickets.length) {
+        state.analyticsFiltered = [];
+      } else {
+        const range = $('#analyticsRange') ? $('#analyticsRange').value : '7';
+        const status = $('#analyticsStatus') ? $('#analyticsStatus').value : '';
+        const category = $('#analyticsCategory') ? $('#analyticsCategory').value : '';
+        const search = $('#analyticsSearch') ? clean($('#analyticsSearch').value).toLowerCase() : '';
+        const minDate = getMinDate(range);
+
+        state.analyticsFiltered = state.tickets.filter((ticket) => {
+          if (minDate && parseTicketDate(ticket.date) < minDate) return false;
+          if (status && ticket.status !== status) return false;
+          if (category && ticket.category !== category) return false;
+
+          if (search) {
+            const haystack = [ticket.ticketId, ticket.date, ticket.category, ticket.bulkLabel, ticket.sku, ticket.creatorId, ticket.comment, ticket.status].join(' ').toLowerCase();
+            if (!haystack.includes(search)) return false;
+          }
+
+          return true;
+        });
+      }
+
+      renderAnalyticsKpis();
+      renderAnalyticsCharts();
+      renderAnalyticsTables();
+    }
+
+    function renderAnalyticsKpis() {
+      const tickets = state.analyticsFiltered;
+      const counts = countByStatus(tickets);
+
+      $('#aTotal').textContent = tickets.length;
+      $('#aOpen').textContent = counts['접수'] || 0;
+      $('#aReview').textContent = counts['내용 확인 중'] || 0;
+      $('#aClient').textContent = counts['고객사 확인 중'] || 0;
+      $('#aDone').textContent = counts['완료'] || 0;
+      $('#aReminder').textContent = tickets.filter((ticket) => ticket.reminded).length;
+    }
+
+    function renderAnalyticsCharts() {
+      const tickets = state.analyticsFiltered;
+      const trend = countByDay(tickets);
+      const statusCounts = countByStatus(tickets);
+      const categoryCounts = countByCategory(tickets);
+
+      state.analyticsTrendChart = drawChart(
+        state.analyticsTrendChart,
+        $('#analyticsTrendChart'),
+        'line',
+        Object.keys(trend),
+        Object.values(trend),
+        '#35bed9'
+      );
+
+      state.analyticsStatusChart = drawChart(
+        state.analyticsStatusChart,
+        $('#analyticsStatusChart'),
+        'doughnut',
+        STATUSES,
+        STATUSES.map((key) => statusCounts[key] || 0),
+        ['#f6c85f', '#245cdf', '#7c3aed', '#16a34a']
+      );
+
+      state.analyticsCategoryChart = drawChart(
+        state.analyticsCategoryChart,
+        $('#analyticsCategoryChart'),
+        'bar',
+        Object.keys(categoryCounts),
+        Object.values(categoryCounts),
+        ['#07162d', '#35bed9', '#245cdf', '#7c3aed', '#16a34a', '#f59e0b', '#ef4444']
+      );
+    }
+
+    function renderAnalyticsTables() {
+      const openTickets = state.analyticsFiltered
+        .filter((ticket) => ticket.status !== '완료')
+        .slice(0, 8);
+
+      const reminderTickets = state.analyticsFiltered
+        .filter((ticket) => ticket.reminded)
+        .slice(0, 8);
+
+      $('#analyticsOpenList').innerHTML = openTickets.map(renderAnalyticsRow).join('') || '<div class="empty">미완료 티켓이 없습니다.</div>';
+      $('#analyticsReminderList').innerHTML = reminderTickets.map(renderAnalyticsRow).join('') || '<div class="empty">리마인드 티켓이 없습니다.</div>';
+
+      $$('[data-analytics-ticket]').forEach((button) => {
+        button.addEventListener('click', () => showDetail(button.dataset.analyticsTicket));
+      });
+    }
+
+    function renderAnalyticsRow(ticket) {
+      return `
+        <div class="analytics-table-row">
+          <button class="ticket-id" type="button" data-analytics-ticket="${escapeAttr(ticket.ticketId)}">${escapeHtml(ticket.ticketId)}</button>
+          <div class="ellipsis">
+            <b>${escapeHtml(ticket.category)}</b>
+            <div class="muted">${escapeHtml(ticket.date)}</div>
+          </div>
+          <span class="badge ${statusClass(ticket.status)}">${escapeHtml(ticket.status)}</span>
+        </div>
+      `;
+    }
+
+    function populateAnalyticsCategories() {
+      const select = $('#analyticsCategory');
+      if (!select) return;
+
+      const current = select.value;
+      const categories = Array.from(new Set(state.tickets.map((ticket) => ticket.category).filter(Boolean))).sort();
+
+      select.innerHTML = '<option value="">All Category</option>' + categories.map((category) => (
+        `<option>${escapeHtml(category)}</option>`
+      )).join('');
+
+      if (categories.includes(current)) select.value = current;
     }
 
     function showDetail(ticketId) {
@@ -1031,6 +1397,71 @@
       }
     }
 
+    async function login(event) {
+      event.preventDefault();
+
+      const form = event.currentTarget;
+      const loginBtn = $('#loginBtn');
+      const errorBox = $('#loginError');
+      const payload = Object.fromEntries(new FormData(form).entries());
+
+      errorBox.style.display = 'none';
+      loginBtn.disabled = true;
+
+      try {
+        const data = await rawApi('login', payload, false);
+
+        if (data.user.role !== 'admin') {
+          throw new Error('관리자 권한이 있는 계정만 접속할 수 있습니다.');
+        }
+
+        state.token = data.token;
+        state.user = data.user;
+
+        localStorage.setItem(TOKEN_KEY, state.token);
+        localStorage.setItem(USER_KEY, JSON.stringify(state.user));
+
+        form.reset();
+        showApp();
+        await loadTickets();
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.style.display = 'block';
+      } finally {
+        loginBtn.disabled = false;
+      }
+    }
+
+    async function logout() {
+      try {
+        if (state.token) await api('logout', {});
+      } catch (err) {}
+
+      clearAuth();
+      showLogin();
+    }
+
+    function showLogin() {
+      $('#loginView').classList.remove('hidden');
+      $('#appView').classList.add('hidden');
+    }
+
+    function showApp() {
+      $('#loginView').classList.add('hidden');
+      $('#appView').classList.remove('hidden');
+      $('#userPill').textContent = `${state.user.name || state.user.userId} · ${state.user.role}`;
+    }
+
+    function clearAuth() {
+      state.token = '';
+      state.user = null;
+      state.tickets = [];
+      state.filtered = [];
+      state.analyticsFiltered = [];
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+    }
+
     async function api(action, payload = {}) {
       return rawApi(action, payload, true);
     }
@@ -1057,16 +1488,23 @@
     function drawChart(existing, canvas, type, labels, data, colors) {
       if (existing) existing.destroy();
 
+      const isLine = type === 'line';
+
       return new Chart(canvas, {
         type,
         data: {
           labels,
           datasets: [{
             data,
-            backgroundColor: colors,
+            label: isLine ? 'Tickets' : undefined,
+            borderColor: isLine ? colors : undefined,
+            backgroundColor: isLine ? 'rgba(53,190,217,.18)' : colors,
+            fill: isLine,
+            tension: isLine ? .35 : 0,
+            pointRadius: isLine ? 3 : undefined,
             borderRadius: type === 'bar' ? 8 : 0,
-            borderWidth: type === 'doughnut' ? 4 : 0,
-            borderColor: '#fff',
+            borderWidth: type === 'doughnut' ? 4 : isLine ? 3 : 0,
+            borderColor: type === 'doughnut' ? '#fff' : isLine ? colors : undefined,
             hoverOffset: type === 'doughnut' ? 8 : 0,
           }],
         },
@@ -1076,6 +1514,7 @@
           cutout: type === 'doughnut' ? '64%' : undefined,
           plugins: {
             legend: {
+              display: type !== 'bar',
               position: type === 'doughnut' ? 'bottom' : 'top',
               labels: {
                 usePointStyle: true,
@@ -1084,7 +1523,7 @@
               },
             },
           },
-          scales: type === 'bar'
+          scales: type === 'bar' || type === 'line'
             ? {
                 x: { grid: { display: false } },
                 y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#edf1f7' } },
@@ -1092,6 +1531,30 @@
             : {},
         },
       });
+    }
+
+    function countByStatus(tickets) {
+      return tickets.reduce((acc, ticket) => {
+        acc[ticket.status] = (acc[ticket.status] || 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    function countByCategory(tickets) {
+      return tickets.reduce((acc, ticket) => {
+        const key = normalizeCategory(ticket.category);
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    function countByDay(tickets) {
+      const sorted = tickets.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      return sorted.reduce((acc, ticket) => {
+        const day = clean(ticket.date).slice(0, 10) || 'Unknown';
+        acc[day] = (acc[day] || 0) + 1;
+        return acc;
+      }, {});
     }
 
     function normalizeTicket(ticket) {
@@ -1120,13 +1583,6 @@
       if (text === '진행중') return '내용 확인 중';
       if (STATUSES.includes(text)) return text;
       return '접수';
-    }
-
-    function countByStatus(tickets) {
-      return tickets.reduce((acc, ticket) => {
-        acc[ticket.status] = (acc[ticket.status] || 0) + 1;
-        return acc;
-      }, {});
     }
 
     function getMinDate(range) {
