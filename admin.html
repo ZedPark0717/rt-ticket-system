@@ -1458,12 +1458,23 @@
       }).join("");
     }
 
+    function normalizeCsvText(value) {
+      return String(value ?? "")
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n")
+        .split(/[\n,\t]+/)
+        .map(item => item.trim())
+        .filter(Boolean)
+        .join(";");
+    }
+
     function csvCell(value) {
-      return `"${String(value ?? "").replaceAll('"', '""')}"`;
+      const text = normalizeCsvText(value);
+      return `"${text.replaceAll('"', '""')}"`;
     }
 
     function toCsv(rows, columns) {
-      const header = columns.map(column => csvCell(column.label)).join(",");
+      const header = columns.map(column => `"${column.label}"`).join(",");
       const body = rows.map(row => {
         return columns.map(column => csvCell(row[column.key] || "")).join(",");
       });
