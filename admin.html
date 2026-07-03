@@ -5,1701 +5,279 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>RT Ticket Admin</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
-    :root {
-      --navy:#071d3a;
-      --blue:#2f63e7;
-      --sky:#42b8d7;
-      --card:#fff;
-      --line:#d9e3ef;
-      --text:#071426;
-      --muted:#68768a;
-      --radius:8px;
-      --shadow:0 18px 45px rgba(7,29,58,.12);
-    }
-
-    * { box-sizing:border-box; }
-
-    body {
-      margin:0;
-      font-family:Arial,"Noto Sans KR",sans-serif;
-      background:linear-gradient(180deg,#edf6fb 0%,#f7f9fc 52%,#edf4fa 100%);
-      color:var(--text);
-    }
-
-    button,input,select { font:inherit; }
-    button { border:0; cursor:pointer; }
-    button:disabled { opacity:.62; cursor:not-allowed; }
-    a { color:inherit; text-decoration:none; }
-
-    .login-page {
-      min-height:100vh;
-      display:grid;
-      place-items:center;
-      padding:24px;
-      background:
-        radial-gradient(circle at 14% 18%,rgba(66,184,215,.26),transparent 32%),
-        linear-gradient(135deg,#061a34 0%,#0b2f5b 55%,#f4f8fc 55%,#f4f8fc 100%);
-    }
-
-    .login-card {
-      width:min(450px,100%);
-      background:#fff;
-      border-radius:14px;
-      box-shadow:var(--shadow);
-      padding:30px;
-    }
-
-    .brand {
-      display:flex;
-      align-items:center;
-      gap:14px;
-      margin-bottom:24px;
-    }
-
-    .brand img {
-      width:158px;
-      background:#fff;
-      border-radius:6px;
-    }
-
-    .brand-fallback {
-      display:none;
-      font-size:30px;
-      font-weight:900;
-      color:#000;
-      letter-spacing:1px;
-    }
-
-    .login-title {
-      margin:0 0 6px;
-      font-size:25px;
-      font-weight:900;
-      color:var(--navy);
-    }
-
-    .login-sub {
-      margin:0 0 22px;
-      color:var(--muted);
-      font-size:14px;
-    }
-
-    label {
-      font-size:12px;
-      font-weight:900;
-      color:#10233f;
-    }
-
-    .field {
-      display:grid;
-      gap:7px;
-      margin-bottom:12px;
-    }
-
-    input,select {
-      width:100%;
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      padding:11px 12px;
-      background:#fff;
-      color:var(--text);
-      outline:none;
-    }
-
-    input:focus,select:focus {
-      border-color:var(--sky);
-      box-shadow:0 0 0 3px rgba(66,184,215,.16);
-    }
-
-    .primary {
-      background:var(--blue);
-      color:#fff;
-      border-radius:var(--radius);
-      padding:11px 14px;
-      font-weight:900;
-      white-space:nowrap;
-    }
-
-    .ghost {
-      background:#e9f0f8;
-      color:#10233f;
-      border-radius:var(--radius);
-      padding:10px 13px;
-      font-weight:900;
-      white-space:nowrap;
-    }
-
-    .danger {
-      background:#ffe8e8;
-      color:#c91818;
-      border-radius:var(--radius);
-      padding:10px 13px;
-      font-weight:900;
-      white-space:nowrap;
-    }
-
-    .error {
-      display:none;
-      margin-top:12px;
-      color:#c91818;
-      font-weight:800;
-      font-size:13px;
-    }
-
-    .loading {
-      position:fixed;
-      inset:0;
-      z-index:999;
-      display:none;
-      place-items:center;
-      background:rgba(7,20,38,.42);
-      backdrop-filter:blur(2px);
-    }
-
-    .loading-box {
-      width:min(280px,calc(100vw - 40px));
-      background:#fff;
-      border:1px solid var(--line);
-      border-radius:14px;
-      box-shadow:0 28px 80px rgba(0,0,0,.24);
-      padding:24px;
-      text-align:center;
-    }
-
-    .spinner {
-      width:38px;
-      height:38px;
-      margin:0 auto 14px;
-      border-radius:50%;
-      border:4px solid #d9e3ef;
-      border-top-color:var(--sky);
-      animation:spin .8s linear infinite;
-    }
-
-    .loading-text {
-      color:var(--navy);
-      font-weight:900;
-      font-size:14px;
-    }
-
-    @keyframes spin {
-      to { transform:rotate(360deg); }
-    }
-
-    .app { display:none; min-height:100vh; }
-
-    .topbar {
-      position:sticky;
-      top:0;
-      z-index:20;
-      background:var(--navy);
-      color:#fff;
-      border-bottom:4px solid var(--sky);
-      box-shadow:0 10px 30px rgba(7,29,58,.18);
-    }
-
-    .top-inner {
-      max-width:1440px;
-      margin:0 auto;
-      padding:16px 22px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:18px;
-    }
-
-    .top-left {
-      display:flex;
-      align-items:center;
-      gap:15px;
-    }
-
-    .top-left img {
-      width:150px;
-      background:#fff;
-      border-radius:6px;
-      padding:5px 8px;
-    }
-
-    .top-title h1 {
-      margin:0;
-      font-size:20px;
-      font-weight:900;
-    }
-
-    .top-title p {
-      margin:3px 0 0;
-      color:#b9d9ee;
-      font-size:13px;
-    }
-
-    .top-actions {
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-
-    .top-tab {
-      background:rgba(255,255,255,.10);
-      color:#dbeafe;
-      border-radius:var(--radius);
-      padding:10px 13px;
-      font-weight:900;
-    }
-
-    .top-tab.active {
-      background:#fff;
-      color:var(--navy);
-    }
-
-    .wrap {
-      max-width:1440px;
-      margin:0 auto;
-      padding:22px;
-    }
-
-    .view { display:none; }
-    .view.active { display:block; }
-
-    .kpis {
-      display:grid;
-      grid-template-columns:repeat(5,1fr);
-      gap:13px;
-      margin-bottom:15px;
-    }
-
-    .kpi {
-      background:#fff;
-      border:1px solid var(--line);
-      border-left:5px solid var(--sky);
-      border-radius:var(--radius);
-      padding:16px;
-      box-shadow:0 10px 25px rgba(7,29,58,.06);
-    }
-
-    .kpi b {
-      display:block;
-      color:var(--muted);
-      font-size:12px;
-      margin-bottom:8px;
-    }
-
-    .kpi strong {
-      font-size:30px;
-      color:var(--navy);
-    }
-
-    .charts {
-      display:grid;
-      grid-template-columns:360px 1fr;
-      gap:15px;
-      margin-bottom:15px;
-    }
-
-    .panel,.toolbar,.table-card,.power-card {
-      background:#fff;
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:0 14px 36px rgba(7,29,58,.08);
-    }
-
-    .panel {
-      padding:16px;
-      min-width:0;
-    }
-
-    .panel h2 {
-      margin:0 0 12px;
-      color:var(--navy);
-      font-size:16px;
-      font-weight:900;
-    }
-
-    .chart {
-      height:260px;
-      position:relative;
-    }
-
-    .toolbar {
-      padding:14px;
-      margin-bottom:15px;
-    }
-
-    .quick {
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-bottom:12px;
-    }
-
-    .filters {
-      display:grid;
-      grid-template-columns:1.25fr .85fr .85fr .85fr .85fr 1.25fr auto auto auto;
-      gap:9px;
-      align-items:end;
-    }
-
-    .filters .field { margin-bottom:0; }
-
-    .date-pair {
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:7px;
-    }
-
-    .table-card { overflow:hidden; }
-
-    .table-head {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-      padding:14px 16px;
-      border-bottom:1px solid var(--line);
-    }
-
-    .table-head h2 {
-      margin:0;
-      color:var(--navy);
-      font-size:16px;
-      font-weight:900;
-    }
-
-    .result-text {
-      color:var(--muted);
-      font-size:13px;
-      font-weight:800;
-    }
-
-    .table-wrap { overflow:auto; }
-
-    table {
-      width:100%;
-      border-collapse:collapse;
-      min-width:980px;
-    }
-
-    th,td {
-      padding:12px 13px;
-      border-bottom:1px solid var(--line);
-      font-size:13px;
-      text-align:left;
-      white-space:nowrap;
-      vertical-align:middle;
-    }
-
-    th {
-      background:#f2f6fb;
-      color:#10233f;
-      font-weight:900;
-    }
-
-    tbody tr:hover { background:#f8fbff; }
-
-    .ticket-link {
-      background:transparent;
-      color:#1f55e6;
-      font-weight:900;
-      padding:0;
-    }
-
-    .clip {
-      max-width:230px;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .pill {
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-width:96px;
-      padding:7px 10px;
-      border-radius:999px;
-      font-size:12px;
-      font-weight:900;
-      white-space:nowrap;
-    }
-
-    .s-received { background:#fff1ca; color:#b06a00; }
-    .s-checking { background:#e7f0ff; color:#245bd6; }
-    .s-customer { background:#eee3ff; color:#6d28d9; }
-    .s-done { background:#daf5e8; color:#08784f; }
-
-    .remind {
-      background:#ffe3e8;
-      color:#d0163f;
-      border-radius:999px;
-      padding:6px 9px;
-      font-size:12px;
-      font-weight:900;
-    }
-
-    .empty {
-      display:none;
-      padding:34px 12px;
-      text-align:center;
-      color:var(--muted);
-      font-weight:800;
-    }
-
-    .analytics-layout {
-      display:grid;
-      grid-template-columns:280px 1fr;
-      gap:15px;
-    }
-
-    .side {
-      background:var(--navy);
-      color:#fff;
-      border-radius:var(--radius);
-      padding:16px;
-      box-shadow:var(--shadow);
-      align-self:start;
-      position:sticky;
-      top:92px;
-    }
-
-    .side h2 {
-      margin:0 0 14px;
-      font-size:17px;
-    }
-
-    .side label { color:#cfe4f4; }
-
-    .side input,.side select {
-      background:#0e3768;
-      border-color:#315a88;
-      color:#fff;
-    }
-
-    .side .ghost {
-      background:#173f72;
-      color:#fff;
-    }
-
-    .power-kpis {
-      display:grid;
-      grid-template-columns:repeat(5,1fr);
-      gap:12px;
-      margin-bottom:15px;
-    }
-
-    .power-card {
-      padding:15px;
-    }
-
-    .power-card b {
-      display:block;
-      color:var(--muted);
-      font-size:12px;
-      margin-bottom:7px;
-    }
-
-    .power-card strong {
-      font-size:26px;
-      color:var(--navy);
-    }
-
-    .analytics-grid {
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:15px;
-      margin-bottom:15px;
-    }
-
-    dialog {
-      border:0;
-      border-radius:14px;
-      padding:0;
-      width:min(760px,calc(100vw - 24px));
-      box-shadow:0 28px 80px rgba(0,0,0,.28);
-    }
-
-    dialog::backdrop { background:rgba(7,20,38,.48); }
-
-    .modal-head {
-      background:var(--navy);
-      color:#fff;
-      padding:18px 20px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-      border-bottom:4px solid var(--sky);
-    }
-
-    .modal-head h2 {
-      margin:0;
-      font-size:18px;
-      font-weight:900;
-    }
-
-    .modal-body { padding:18px 20px; }
-
-    .status-edit {
-      display:grid;
-      grid-template-columns:1fr auto;
-      gap:10px;
-      margin-bottom:14px;
-    }
-
-    .detail-grid {
-      display:grid;
-      grid-template-columns:140px 1fr;
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      overflow:hidden;
-      margin-bottom:15px;
-    }
-
-    .detail-grid b,.detail-grid div {
-      padding:11px 12px;
-      border-bottom:1px solid var(--line);
-      font-size:13px;
-      word-break:break-word;
-    }
-
-    .detail-grid b {
-      background:#f2f6fb;
-      color:#10233f;
-    }
-
-    .modal-actions {
-      display:flex;
-      gap:10px;
-      justify-content:flex-end;
-      flex-wrap:wrap;
-    }
-
-    @media(max-width:1120px) {
-      .kpis,.power-kpis { grid-template-columns:repeat(2,1fr); }
-      .charts,.analytics-layout,.analytics-grid { grid-template-columns:1fr; }
-      .side { position:static; }
-      .filters { grid-template-columns:1fr 1fr; }
-    }
-
-    @media(max-width:680px) {
-      .top-inner { flex-direction:column; align-items:flex-start; }
-      .top-left img { width:132px; }
-      .wrap { padding:14px; }
-      .kpis,.power-kpis,.filters,.date-pair,.status-edit { grid-template-columns:1fr; }
-      .top-actions,.modal-actions { width:100%; }
-      .top-actions button,.modal-actions button,.modal-actions a,.filters button { width:100%; }
-    }
+    :root{--navy:#071d3a;--blue:#2f63e7;--sky:#42b8d7;--line:#d9e3ef;--text:#071426;--muted:#68768a;--radius:8px;--shadow:0 18px 45px rgba(7,29,58,.12)}
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans KR",sans-serif;background:linear-gradient(180deg,#edf6fb 0%,#f7f9fc 52%,#edf4fa 100%);color:var(--text)}
+    button,input,select{font:inherit}button{border:0;cursor:pointer}button:disabled{opacity:.62;cursor:not-allowed}a{color:inherit;text-decoration:none}
+    .login-page{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 14% 18%,rgba(66,184,215,.26),transparent 32%),linear-gradient(135deg,#061a34 0%,#0b2f5b 55%,#f4f8fc 55%,#f4f8fc 100%)}
+    .login-card{width:min(450px,100%);background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:30px}.brand{display:flex;align-items:center;gap:14px;margin-bottom:24px}.brand img{width:158px;background:#fff;border-radius:6px}.brand-fallback{display:none;font-size:30px;font-weight:900;color:#000;letter-spacing:1px}
+    .login-title{margin:0 0 6px;font-size:25px;font-weight:900;color:var(--navy)}.login-sub{margin:0 0 22px;color:var(--muted);font-size:14px}
+    label{font-size:12px;font-weight:900;color:#10233f}.field{display:grid;gap:7px;margin-bottom:12px}
+    input,select{width:100%;border:1px solid var(--line);border-radius:var(--radius);padding:11px 12px;background:#fff;color:var(--text);outline:none}
+    input:focus,select:focus{border-color:var(--sky);box-shadow:0 0 0 3px rgba(66,184,215,.16)}
+    .primary{background:var(--blue);color:#fff;border-radius:var(--radius);padding:11px 14px;font-weight:900;white-space:nowrap}.ghost{background:#e9f0f8;color:#10233f;border-radius:var(--radius);padding:10px 13px;font-weight:900;white-space:nowrap}.danger{background:#ffe8e8;color:#c91818;border-radius:var(--radius);padding:10px 13px;font-weight:900;white-space:nowrap}.error{display:none;margin-top:12px;color:#c91818;font-weight:800;font-size:13px}
+    .loading{position:fixed;inset:0;z-index:999;display:none;place-items:center;background:rgba(7,20,38,.42);backdrop-filter:blur(2px)}.loading-box{width:min(280px,calc(100vw - 40px));background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 28px 80px rgba(0,0,0,.24);padding:24px;text-align:center}.spinner{width:38px;height:38px;margin:0 auto 14px;border-radius:50%;border:4px solid #d9e3ef;border-top-color:var(--sky);animation:spin .8s linear infinite}.loading-text{color:var(--navy);font-weight:900;font-size:14px}@keyframes spin{to{transform:rotate(360deg)}}
+    .app{display:none;min-height:100vh}.topbar{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff;border-bottom:4px solid var(--sky);box-shadow:0 10px 30px rgba(7,29,58,.18)}.top-inner{max-width:1440px;margin:0 auto;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}.top-left{display:flex;align-items:center;gap:15px}.top-left img{width:150px;background:#fff;border-radius:6px;padding:5px 8px}.top-title h1{margin:0;font-size:20px;font-weight:900}.top-title p{margin:3px 0 0;color:#b9d9ee;font-size:13px}.top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.top-tab{background:rgba(255,255,255,.10);color:#dbeafe;border-radius:var(--radius);padding:10px 13px;font-weight:900}.top-tab.active{background:#fff;color:var(--navy)}
+    .wrap{max-width:1440px;margin:0 auto;padding:22px}.view{display:none}.view.active{display:block}
+    .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:15px}.kpi{background:#fff;border:1px solid var(--line);border-left:5px solid var(--sky);border-radius:var(--radius);padding:16px;box-shadow:0 10px 25px rgba(7,29,58,.06)}.kpi b{display:block;color:var(--muted);font-size:12px;margin-bottom:8px}.kpi strong{font-size:30px;color:var(--navy)}
+    .charts{display:grid;grid-template-columns:360px 1fr;gap:15px;margin-bottom:15px}.panel,.toolbar,.table-card,.power-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 14px 36px rgba(7,29,58,.08)}.panel{padding:16px;min-width:0}.panel h2{margin:0 0 12px;color:var(--navy);font-size:16px;font-weight:900}.chart{height:260px;position:relative}
+    .toolbar{padding:14px;margin-bottom:15px}.quick{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.filters{display:grid;grid-template-columns:1.25fr .85fr .85fr .85fr .85fr 1.25fr auto auto auto;gap:9px;align-items:end}.filters .field{margin-bottom:0}.date-pair{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .table-card{overflow:hidden}.table-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}.table-head h2{margin:0;color:var(--navy);font-size:16px;font-weight:900}.result-text{color:var(--muted);font-size:13px;font-weight:800}.table-wrap{overflow:auto}
+    table{width:100%;border-collapse:collapse;min-width:980px}th,td{padding:12px 13px;border-bottom:1px solid var(--line);font-size:13px;text-align:left;white-space:nowrap;vertical-align:middle}th{background:#f2f6fb;color:#10233f;font-weight:900}tbody tr:hover{background:#f8fbff}
+    .ticket-link{background:transparent;color:#1f55e6;font-weight:900;padding:0}.clip{max-width:230px;overflow:hidden;text-overflow:ellipsis}.pill{display:inline-flex;align-items:center;justify-content:center;min-width:96px;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:900;white-space:nowrap}.s-received{background:#fff1ca;color:#b06a00}.s-checking{background:#e7f0ff;color:#245bd6}.s-customer{background:#eee3ff;color:#6d28d9}.s-done{background:#daf5e8;color:#08784f}.remind{background:#ffe3e8;color:#d0163f;border-radius:999px;padding:6px 9px;font-size:12px;font-weight:900}.empty{display:none;padding:34px 12px;text-align:center;color:var(--muted);font-weight:800}
+    .analytics-layout{display:grid;grid-template-columns:280px 1fr;gap:15px}.side{background:var(--navy);color:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);align-self:start;position:sticky;top:92px}.side h2{margin:0 0 14px;font-size:17px}.side label{color:#cfe4f4}.side input,.side select{background:#0e3768;border-color:#315a88;color:#fff}.side .ghost{background:#173f72;color:#fff}.power-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:15px}.power-card{padding:15px}.power-card b{display:block;color:var(--muted);font-size:12px;margin-bottom:7px}.power-card strong{font-size:26px;color:var(--navy)}.analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px}
+    dialog{border:0;border-radius:14px;padding:0;width:min(760px,calc(100vw - 24px));box-shadow:0 28px 80px rgba(0,0,0,.28)}dialog::backdrop{background:rgba(7,20,38,.48)}.modal-head{background:var(--navy);color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:4px solid var(--sky)}.modal-head h2{margin:0;font-size:18px;font-weight:900}.modal-body{padding:18px 20px}.status-edit{display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:14px}.detail-grid{display:grid;grid-template-columns:140px 1fr;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:15px}.detail-grid b,.detail-grid div{padding:11px 12px;border-bottom:1px solid var(--line);font-size:13px;word-break:break-word}.detail-grid b{background:#f2f6fb;color:#10233f}.modal-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+    @media(max-width:1120px){.kpis,.power-kpis{grid-template-columns:repeat(2,1fr)}.charts,.analytics-layout,.analytics-grid{grid-template-columns:1fr}.side{position:static}.filters{grid-template-columns:1fr 1fr}}@media(max-width:680px){.top-inner{flex-direction:column;align-items:flex-start}.top-left img{width:132px}.wrap{padding:14px}.kpis,.power-kpis,.filters,.date-pair,.status-edit{grid-template-columns:1fr}.top-actions,.modal-actions{width:100%}.top-actions button,.modal-actions button,.modal-actions a,.filters button{width:100%}}
   </style>
 </head>
-
 <body>
-  <div id="loading" class="loading">
-    <div class="loading-box">
-      <div class="spinner"></div>
-      <div id="loadingText" class="loading-text">처리 중입니다...</div>
-    </div>
-  </div>
+  <div id="loading" class="loading"><div class="loading-box"><div class="spinner"></div><div id="loadingText" class="loading-text">처리 중입니다...</div></div></div>
 
   <section id="loginPage" class="login-page">
     <div class="login-card">
-      <div class="brand">
-        <img src="assets/maersk-logo.png" alt="MAERSK" onerror="this.style.display='none';document.getElementById('loginBrandFallback').style.display='block';" />
-        <div id="loginBrandFallback" class="brand-fallback">MAERSK</div>
-      </div>
-
-      <h1 class="login-title">RT Ticket Admin</h1>
-      <p class="login-sub">관리자 계정으로 로그인하세요.</p>
-
+      <div class="brand"><img src="assets/maersk-logo.png" alt="MAERSK" onerror="this.style.display='none';document.getElementById('loginBrandFallback').style.display='block';" /><div id="loginBrandFallback" class="brand-fallback">MAERSK</div></div>
+      <h1 class="login-title">RT Ticket Admin</h1><p class="login-sub">관리자 계정으로 로그인하세요.</p>
       <form id="loginForm">
-        <div class="field">
-          <label for="loginId">ID</label>
-          <input id="loginId" autocomplete="username" required />
-        </div>
-
-        <div class="field">
-          <label for="loginPw">Password</label>
-          <input id="loginPw" type="password" autocomplete="current-password" required />
-        </div>
-
-        <button class="primary" type="submit" style="width:100%;">로그인</button>
-        <div id="loginError" class="error"></div>
+        <div class="field"><label for="loginId">ID</label><input id="loginId" autocomplete="username" required /></div>
+        <div class="field"><label for="loginPw">Password</label><input id="loginPw" type="password" autocomplete="current-password" required /></div>
+        <button class="primary" type="submit" style="width:100%;">로그인</button><div id="loginError" class="error"></div>
       </form>
     </div>
   </section>
 
   <section id="app" class="app">
-    <header class="topbar">
-      <div class="top-inner">
-        <div class="top-left">
-          <img src="assets/maersk-logo.png" alt="MAERSK" onerror="this.outerHTML='<strong style=&quot;font-size:26px;&quot;>MAERSK</strong>';" />
-          <div class="top-title">
-            <h1>RT Ticket Admin</h1>
-            <p>Operations and analytics</p>
-          </div>
-        </div>
-
-        <div class="top-actions">
-          <button class="top-tab active" data-tab="operations">Operations</button>
-          <button class="top-tab" data-tab="analytics">Analytics</button>
-          <button id="logoutBtn" class="top-tab">Logout</button>
-        </div>
-      </div>
-    </header>
+    <header class="topbar"><div class="top-inner"><div class="top-left"><img src="assets/maersk-logo.png" alt="MAERSK" onerror="this.outerHTML='<strong style=&quot;font-size:26px;&quot;>MAERSK</strong>';" /><div class="top-title"><h1>RT Ticket Admin</h1><p>Operations and analytics</p></div></div><div class="top-actions"><button class="top-tab active" data-tab="operations">Operations</button><button class="top-tab" data-tab="analytics">Analytics</button><button id="logoutBtn" class="top-tab">Logout</button></div></div></header>
 
     <main class="wrap">
       <section id="operations" class="view active">
-        <div class="kpis">
-          <div class="kpi"><b>전체 티켓</b><strong id="kpiTotal">0</strong></div>
-          <div class="kpi"><b>접수</b><strong id="kpiReceived">0</strong></div>
-          <div class="kpi"><b>내용 확인 중</b><strong id="kpiChecking">0</strong></div>
-          <div class="kpi"><b>고객사 확인 중</b><strong id="kpiCustomer">0</strong></div>
-          <div class="kpi"><b>완료</b><strong id="kpiDone">0</strong></div>
-        </div>
-
-        <div class="charts">
-          <div class="panel">
-            <h2>Status Overview</h2>
-            <div class="chart"><canvas id="statusChart"></canvas></div>
-          </div>
-
-          <div class="panel">
-            <h2>Category Volume</h2>
-            <div class="chart"><canvas id="categoryChart"></canvas></div>
-          </div>
-        </div>
-
+        <div class="kpis"><div class="kpi"><b>전체 티켓</b><strong id="kpiTotal">0</strong></div><div class="kpi"><b>접수</b><strong id="kpiReceived">0</strong></div><div class="kpi"><b>내용 확인 중</b><strong id="kpiChecking">0</strong></div><div class="kpi"><b>고객사 확인 중</b><strong id="kpiCustomer">0</strong></div><div class="kpi"><b>완료</b><strong id="kpiDone">0</strong></div></div>
+        <div class="charts"><div class="panel"><h2>Status Overview</h2><div class="chart"><canvas id="statusChart"></canvas></div></div><div class="panel"><h2>Category Volume</h2><div class="chart"><canvas id="categoryChart"></canvas></div></div></div>
         <div class="toolbar">
-          <div class="quick">
-            <button id="todayBtn" class="ghost" type="button">오늘</button>
-            <button id="sevenBtn" class="ghost" type="button">7일</button>
-            <button id="thirtyBtn" class="ghost" type="button">30일</button>
-            <button id="allDateBtn" class="ghost" type="button">전체</button>
-          </div>
-
+          <div class="quick"><button id="todayBtn" class="ghost" type="button">오늘</button><button id="sevenBtn" class="ghost" type="button">7일</button><button id="thirtyBtn" class="ghost" type="button">30일</button><button id="allDateBtn" class="ghost" type="button">전체</button></div>
           <div class="filters">
-            <div class="field">
-              <label for="keyword">검색</label>
-              <input id="keyword" placeholder="Ticket ID, SKU, 코멘트" />
-            </div>
-
-            <div class="field">
-              <label for="bulkLabel">Bulk Label</label>
-              <input id="bulkLabel" placeholder="벌크라벨" />
-            </div>
-
-            <div class="field">
-              <label for="ticketId">Ticket ID</label>
-              <input id="ticketId" placeholder="RT-yyyymmdd-01" />
-            </div>
-
-            <div class="field">
-              <label for="creatorId">작업자 ID</label>
-              <input id="creatorId" placeholder="작업자" />
-            </div>
-
-            <div class="field">
-              <label for="status">Status</label>
-              <select id="status">
-                <option value="">전체</option>
-                <option>접수</option>
-                <option>내용 확인 중</option>
-                <option>고객사 확인 중</option>
-                <option>완료</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label>날짜</label>
-              <div class="date-pair">
-                <input id="dateFrom" type="date" />
-                <input id="dateTo" type="date" />
-              </div>
-            </div>
-
-            <button id="searchBtn" class="primary" type="button">조회</button>
-            <button id="ticketsCsvBtn" class="ghost" type="button">Tickets CSV</button>
-            <button id="skuCsvBtn" class="ghost" type="button">SKU CSV</button>
+            <div class="field"><label for="keyword">검색</label><input id="keyword" placeholder="Ticket ID, SKU, 코멘트" /></div>
+            <div class="field"><label for="bulkLabel">Bulk Label</label><input id="bulkLabel" placeholder="벌크라벨" /></div>
+            <div class="field"><label for="ticketId">Ticket ID</label><input id="ticketId" placeholder="RT-yyyymmdd-01" /></div>
+            <div class="field"><label for="creatorId">작업자 ID</label><input id="creatorId" placeholder="작업자" /></div>
+            <div class="field"><label for="status">Status</label><select id="status"><option value="">전체</option><option>접수</option><option>내용 확인 중</option><option>고객사 확인 중</option><option>완료</option></select></div>
+            <div class="field"><label>날짜</label><div class="date-pair"><input id="dateFrom" type="date" /><input id="dateTo" type="date" /></div></div>
+            <button id="searchBtn" class="primary" type="button">조회</button><button id="ticketsCsvBtn" class="ghost" type="button">Tickets CSV</button><button id="skuCsvBtn" class="ghost" type="button">SKU CSV</button>
           </div>
         </div>
-
-        <div class="table-card">
-          <div class="table-head">
-            <h2>Ticket List</h2>
-            <span id="resultText" class="result-text">0건</span>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Ticket ID</th>
-                  <th>Date</th>
-                  <th>Category</th>
-                  <th>Bulk Label</th>
-                  <th>SKU</th>
-                  <th>작업자</th>
-                  <th>Status</th>
-                  <th>알림</th>
-                </tr>
-              </thead>
-              <tbody id="ticketBody"></tbody>
-            </table>
-          </div>
-
-          <div id="emptyTickets" class="empty">조회된 티켓이 없습니다.</div>
-        </div>
+        <div class="table-card"><div class="table-head"><h2>Ticket List</h2><span id="resultText" class="result-text">0건</span></div><div class="table-wrap"><table><thead><tr><th>Ticket ID</th><th>Date</th><th>Category</th><th>Bulk Label</th><th>SKU</th><th>작업자</th><th>Status</th><th>알림</th></tr></thead><tbody id="ticketBody"></tbody></table></div><div id="emptyTickets" class="empty">조회된 티켓이 없습니다.</div></div>
       </section>
 
       <section id="analytics" class="view">
         <div class="analytics-layout">
           <aside class="side">
             <h2>Analytics Filter</h2>
-
-            <div class="field">
-              <label for="analyticsDateFrom">From</label>
-              <input id="analyticsDateFrom" type="date" />
-            </div>
-
-            <div class="field">
-              <label for="analyticsDateTo">To</label>
-              <input id="analyticsDateTo" type="date" />
-            </div>
-
-            <div class="field">
-              <label for="analyticsCategory">Category</label>
-              <select id="analyticsCategory">
-                <option value="">전체</option>
-                <option>RCP 오류</option>
-                <option>RFID 오류</option>
-                <option>벌크 훼손</option>
-                <option>타매장</option>
-                <option>기타 문제</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label for="analyticsStatus">Status</label>
-              <select id="analyticsStatus">
-                <option value="">전체</option>
-                <option>접수</option>
-                <option>내용 확인 중</option>
-                <option>고객사 확인 중</option>
-                <option>완료</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label for="analyticsKeyword">Keyword</label>
-              <input id="analyticsKeyword" placeholder="Ticket, SKU, Bulk" />
-            </div>
-
-            <div style="display:grid;gap:8px;margin-top:14px;">
-              <button id="analyticsSearchBtn" class="primary" type="button">조회</button>
-              <button id="analyticsTodayBtn" class="ghost" type="button">오늘</button>
-              <button id="analyticsAllBtn" class="ghost" type="button">전체</button>
-              <button id="analyticsCsvBtn" class="ghost" type="button">Analytics CSV</button>
-              <button id="analyticsSkuCsvBtn" class="ghost" type="button">SKU CSV</button>
-            </div>
+            <div class="field"><label for="analyticsDateFrom">From</label><input id="analyticsDateFrom" type="date" /></div>
+            <div class="field"><label for="analyticsDateTo">To</label><input id="analyticsDateTo" type="date" /></div>
+            <div class="field"><label for="analyticsCategory">Category</label><select id="analyticsCategory"><option value="">전체</option><option>RCP 오류</option><option>RFID 오류</option><option>벌크 훼손</option><option>타매장</option><option>기타 문제</option></select></div>
+            <div class="field"><label for="analyticsStatus">Status</label><select id="analyticsStatus"><option value="">전체</option><option>접수</option><option>내용 확인 중</option><option>고객사 확인 중</option><option>완료</option></select></div>
+            <div class="field"><label for="analyticsKeyword">Keyword</label><input id="analyticsKeyword" placeholder="Ticket, SKU, Bulk" /></div>
+            <div style="display:grid;gap:8px;margin-top:14px;"><button id="analyticsSearchBtn" class="primary" type="button">조회</button><button id="analyticsTodayBtn" class="ghost" type="button">오늘</button><button id="analyticsAllBtn" class="ghost" type="button">전체</button><button id="analyticsCsvBtn" class="ghost" type="button">Analytics CSV</button><button id="analyticsSkuCsvBtn" class="ghost" type="button">SKU CSV</button></div>
           </aside>
-
           <div>
-            <div class="power-kpis">
-              <div class="power-card">
-                <b>Total Tickets</b>
-                <strong id="analyticsTotalTickets">0</strong>
-              </div>
-
-              <div class="power-card">
-                <b>Bulk Labels</b>
-                <strong id="analyticsBulkCount">0</strong>
-              </div>
-
-              <div class="power-card">
-                <b>Processing</b>
-                <strong id="analyticsProcessing">0</strong>
-              </div>
-
-              <div class="power-card">
-                <b>Reminder</b>
-                <strong id="analyticsReminderCount">0</strong>
-              </div>
-
-              <div class="power-card">
-                <b>Completion</b>
-                <strong id="analyticsCompleteRate">0%</strong>
-              </div>
-            </div>
-
-            <div class="analytics-grid">
-              <div class="panel">
-                <h2>Daily Ticket Trend</h2>
-                <div class="chart"><canvas id="dailyChart"></canvas></div>
-              </div>
-
-              <div class="panel">
-                <h2>Status Mix</h2>
-                <div class="chart"><canvas id="analyticsStatusChart"></canvas></div>
-              </div>
-
-              <div class="panel">
-                <h2>SKU Volume by Category</h2>
-                <div class="chart"><canvas id="skuCategoryChart"></canvas></div>
-              </div>
-
-              <div class="panel">
-                <h2>Bulk Volume by Category</h2>
-                <div class="chart"><canvas id="bulkCategoryChart"></canvas></div>
-              </div>
-            </div>
-
-            <div class="table-card">
-              <div class="table-head">
-                <h2>SKU Detail</h2>
-                <span id="skuResultText" class="result-text">0건</span>
-              </div>
-
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Ticket ID</th>
-                      <th>Date</th>
-                      <th>Category</th>
-                      <th>Bulk Label</th>
-                      <th>SKU</th>
-                      <th>작업자</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody id="skuBody"></tbody>
-                </table>
-              </div>
-
-              <div id="emptySku" class="empty">조회된 SKU 데이터가 없습니다.</div>
-            </div>
+            <div class="power-kpis"><div class="power-card"><b>Total Tickets</b><strong id="analyticsTotalTickets">0</strong></div><div class="power-card"><b>Bulk Labels</b><strong id="analyticsBulkCount">0</strong></div><div class="power-card"><b>Processing</b><strong id="analyticsProcessing">0</strong></div><div class="power-card"><b>Reminder</b><strong id="analyticsReminderCount">0</strong></div><div class="power-card"><b>Completion</b><strong id="analyticsCompleteRate">0%</strong></div></div>
+            <div class="analytics-grid"><div class="panel"><h2>Daily Ticket Trend</h2><div class="chart"><canvas id="dailyChart"></canvas></div></div><div class="panel"><h2>Status Mix</h2><div class="chart"><canvas id="analyticsStatusChart"></canvas></div></div><div class="panel"><h2>SKU Volume by Category</h2><div class="chart"><canvas id="skuCategoryChart"></canvas></div></div><div class="panel"><h2>Bulk Volume by Category</h2><div class="chart"><canvas id="bulkCategoryChart"></canvas></div></div></div>
+            <div class="table-card"><div class="table-head"><h2>SKU Detail</h2><span id="skuResultText" class="result-text">0건</span></div><div class="table-wrap"><table><thead><tr><th>Ticket ID</th><th>Date</th><th>Category</th><th>Bulk Label</th><th>SKU</th><th>작업자</th><th>Status</th></tr></thead><tbody id="skuBody"></tbody></table></div><div id="emptySku" class="empty">조회된 SKU 데이터가 없습니다.</div></div>
           </div>
         </div>
       </section>
     </main>
   </section>
 
-  <dialog id="detailDialog">
-    <div class="modal-head">
-      <h2 id="detailTitle">Ticket Detail</h2>
-      <button class="ghost" type="button" onclick="detailDialog.close()">닫기</button>
-    </div>
-
-    <div class="modal-body">
-      <div class="status-edit">
-        <select id="detailStatus">
-          <option>접수</option>
-          <option>내용 확인 중</option>
-          <option>고객사 확인 중</option>
-          <option>완료</option>
-        </select>
-
-        <button id="statusUpdateBtn" class="primary" type="button">상태 변경</button>
-      </div>
-
-      <div id="detailGrid" class="detail-grid"></div>
-
-      <div class="modal-actions">
-        <a id="photoLink" class="ghost" href="#" target="_blank" rel="noopener">사진 폴더 열기</a>
-        <button id="deleteBtn" class="danger" type="button">삭제</button>
-      </div>
-    </div>
-  </dialog>
+  <dialog id="detailDialog"><div class="modal-head"><h2 id="detailTitle">Ticket Detail</h2><button class="ghost" type="button" onclick="detailDialog.close()">닫기</button></div><div class="modal-body"><div class="status-edit"><select id="detailStatus"><option>접수</option><option>내용 확인 중</option><option>고객사 확인 중</option><option>완료</option></select><button id="statusUpdateBtn" class="primary" type="button">상태 변경</button></div><div id="detailGrid" class="detail-grid"></div><div class="modal-actions"><a id="photoLink" class="ghost" href="#" target="_blank" rel="noopener">사진 폴더 열기</a><button id="deleteBtn" class="danger" type="button">삭제</button></div></div></dialog>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
-    const TOKEN_KEY = "rt_admin_auth_token";
+    const API_URL="https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
+    const TOKEN_KEY="rt_admin_auth_token";
+    const COLORS=["#42b8d7","#2f63e7","#7c3aed","#10a66a","#f59e0b","#ef4444","#0b2f5b"];
+    let tickets=[],analyticsTickets=[],skuItems=[],currentTicket=null,charts={},loadingCount=0;
+    const $=id=>document.getElementById(id);
 
-    const COLORS = [
-      "#42b8d7",
-      "#2f63e7",
-      "#7c3aed",
-      "#10a66a",
-      "#f59e0b",
-      "#ef4444",
-      "#0b2f5b"
-    ];
+    function showLoading(message){loadingCount+=1;$("loadingText").textContent=message||"처리 중입니다...";$("loading").style.display="grid";document.querySelectorAll("button").forEach(btn=>btn.disabled=true)}
+    function hideLoading(){loadingCount=Math.max(0,loadingCount-1);if(loadingCount===0){$("loading").style.display="none";document.querySelectorAll("button").forEach(btn=>btn.disabled=false)}}
+    async function withLoading(message,task){showLoading(message);try{return await task()}finally{hideLoading()}}
+    function escapeHtml(value){return String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+    function todayString(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+    function addDays(days){const d=new Date();d.setDate(d.getDate()+days);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+    function setDefaultDates(){const t=todayString();$("dateFrom").value=t;$("dateTo").value=t;$("analyticsDateFrom").value=t;$("analyticsDateTo").value=t}
+    function normalizeBulk(value){return String(value||"").trim().toUpperCase()}
+    function uniqueBulkCount(rows){const set=new Set();rows.forEach(r=>{const b=normalizeBulk(r.bulkLabel);if(b)set.add(b)});return set.size}
+    function bulkVolumeByCategory(rows){const map={};rows.forEach(r=>{const c=r.category||"미분류";const b=normalizeBulk(r.bulkLabel);if(!b)return;if(!map[c])map[c]=new Set();map[c].add(b)});const result={};Object.keys(map).forEach(c=>result[c]=map[c].size);return result}
+    function statusPill(status){const safe=status||"접수";const cls={"접수":"s-received","내용 확인 중":"s-checking","고객사 확인 중":"s-customer","완료":"s-done"}[safe]||"s-received";return`<span class="pill ${cls}">${escapeHtml(safe)}</span>`}
 
-    let tickets = [];
-    let analyticsTickets = [];
-    let skuItems = [];
-    let currentTicket = null;
-    let charts = {};
-    let loadingCount = 0;
-
-    const $ = id => document.getElementById(id);
-
-    function showLoading(message) {
-      loadingCount += 1;
-      $("loadingText").textContent = message || "처리 중입니다...";
-      $("loading").style.display = "grid";
-      document.querySelectorAll("button").forEach(btn => btn.disabled = true);
-    }
-
-    function hideLoading() {
-      loadingCount = Math.max(0, loadingCount - 1);
-
-      if (loadingCount === 0) {
-        $("loading").style.display = "none";
-        document.querySelectorAll("button").forEach(btn => btn.disabled = false);
-      }
-    }
-
-    async function withLoading(message, task) {
-      showLoading(message);
-
-      try {
-        return await task();
-      } finally {
-        hideLoading();
-      }
-    }
-
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    function todayString() {
-      const date = new Date();
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    }
-
-    function addDays(days) {
-      const date = new Date();
-      date.setDate(date.getDate() + days);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    }
-
-    function setDefaultDates() {
-      const today = todayString();
-      $("dateFrom").value = today;
-      $("dateTo").value = today;
-      $("analyticsDateFrom").value = today;
-      $("analyticsDateTo").value = today;
-    }
-
-    function normalizeBulk(value) {
-      return String(value || "").trim().toUpperCase();
-    }
-
-    function uniqueBulkCount(rows) {
-      const set = new Set();
-
-      rows.forEach(row => {
-        const bulk = normalizeBulk(row.bulkLabel);
-
-        if (bulk) {
-          set.add(bulk);
-        }
-      });
-
-      return set.size;
-    }
-
-    function bulkVolumeByCategory(rows) {
-      const map = {};
-
-      rows.forEach(row => {
-        const category = row.category || "미분류";
-        const bulk = normalizeBulk(row.bulkLabel);
-
-        if (!bulk) return;
-
-        if (!map[category]) {
-          map[category] = new Set();
-        }
-
-        map[category].add(bulk);
-      });
-
-      const result = {};
-
-      Object.keys(map).forEach(category => {
-        result[category] = map[category].size;
-      });
-
-      return result;
-    }
-
-    function statusPill(status) {
-      const safe = status || "접수";
-
-      const className = {
-        "접수": "s-received",
-        "내용 확인 중": "s-checking",
-        "고객사 확인 중": "s-customer",
-        "완료": "s-done"
-      }[safe] || "s-received";
-
-      return `<span class="pill ${className}">${escapeHtml(safe)}</span>`;
-    }
-
-    async function api(action, payload = {}) {
-      const token = localStorage.getItem(TOKEN_KEY) || "";
-
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8"
-        },
-        body: JSON.stringify({
-          action,
-          token,
-          ...payload
-        })
-      });
-
-      const text = await res.text();
-      let data;
-
-      try {
-        data = JSON.parse(text);
-      } catch (err) {
-        throw new Error("서버 응답을 읽을 수 없습니다. Apps Script 새 버전 배포를 확인해주세요.");
-      }
-
-      if (!data.ok) {
-        const message =
-          typeof data.message === "string" ? data.message :
-          typeof data.error === "string" ? data.error :
-          JSON.stringify(data.message || data.error || data);
-
-        throw new Error(message);
-      }
-
+    async function api(action,payload={}){
+      const token=localStorage.getItem(TOKEN_KEY)||"";
+      const res=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,token,...payload})});
+      const text=await res.text();let data;
+      try{data=JSON.parse(text)}catch(err){throw new Error("서버 응답을 읽을 수 없습니다. Apps Script 새 버전 배포를 확인해주세요.")}
+      if(!data.ok){const message=typeof data.message==="string"?data.message:typeof data.error==="string"?data.error:JSON.stringify(data.message||data.error||data);throw new Error(message)}
       return data;
     }
 
-    function showLogin() {
-      $("loginPage").style.display = "grid";
-      $("app").style.display = "none";
-    }
+    function showLogin(){$("loginPage").style.display="grid";$("app").style.display="none"}
+    function showApp(){$("loginPage").style.display="none";$("app").style.display="block"}
 
-    function showApp() {
-      $("loginPage").style.display = "none";
-      $("app").style.display = "block";
-    }
-
-    $("loginForm").addEventListener("submit", async event => {
-      event.preventDefault();
-      $("loginError").style.display = "none";
-
-      try {
-        await withLoading("로그인 중입니다...", async () => {
-          const data = await api("login", {
-            id: $("loginId").value.trim(),
-            password: $("loginPw").value,
-            requiredRole: "admin"
-          });
-
-          if (data.role !== "admin") {
-            throw new Error("관리자 권한이 없습니다.");
-          }
-
-          localStorage.setItem(TOKEN_KEY, data.token);
-
-          showApp();
-          setDefaultDates();
-
-          await loadTickets(false);
-          await loadAnalytics(false);
-        });
-      } catch (err) {
-        $("loginError").textContent = err.message || "로그인 실패";
-        $("loginError").style.display = "block";
-      }
+    $("loginForm").addEventListener("submit",async e=>{
+      e.preventDefault();$("loginError").style.display="none";
+      try{await withLoading("로그인 중입니다...",async()=>{const data=await api("login",{id:$("loginId").value.trim(),password:$("loginPw").value,requiredRole:"admin"});if(data.role!=="admin")throw new Error("관리자 권한이 없습니다.");localStorage.setItem(TOKEN_KEY,data.token);showApp();setDefaultDates();await loadTickets(false);await loadAnalytics(false)})}
+      catch(err){$("loginError").textContent=err.message||"로그인 실패";$("loginError").style.display="block"}
     });
 
-    $("logoutBtn").addEventListener("click", async () => {
-      try {
-        await withLoading("로그아웃 중입니다...", async () => {
-          await api("logout");
-        });
-      } catch (err) {}
+    $("logoutBtn").addEventListener("click",async()=>{try{await withLoading("로그아웃 중입니다...",async()=>{await api("logout")})}catch(err){}localStorage.removeItem(TOKEN_KEY);showLogin()});
 
-      localStorage.removeItem(TOKEN_KEY);
-      showLogin();
-    });
+    document.querySelectorAll(".top-tab[data-tab]").forEach(btn=>{btn.addEventListener("click",async()=>{document.querySelectorAll(".top-tab[data-tab]").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));btn.classList.add("active");$(btn.dataset.tab).classList.add("active");if(btn.dataset.tab==="analytics")await loadAnalytics()})});
 
-    document.querySelectorAll(".top-tab[data-tab]").forEach(button => {
-      button.addEventListener("click", async () => {
-        document.querySelectorAll(".top-tab[data-tab]").forEach(item => item.classList.remove("active"));
-        document.querySelectorAll(".view").forEach(item => item.classList.remove("active"));
+    function operationFilters(){return{keyword:$("keyword").value.trim(),bulkLabel:$("bulkLabel").value.trim(),ticketId:$("ticketId").value.trim(),creatorId:$("creatorId").value.trim(),status:$("status").value,dateFrom:$("dateFrom").value,dateTo:$("dateTo").value}}
+    function analyticsFilters(){return{keyword:$("analyticsKeyword").value.trim(),category:$("analyticsCategory").value,status:$("analyticsStatus").value,dateFrom:$("analyticsDateFrom").value,dateTo:$("analyticsDateTo").value}}
 
-        button.classList.add("active");
-        $(button.dataset.tab).classList.add("active");
-
-        if (button.dataset.tab === "analytics") {
-          await loadAnalytics();
-        }
-      });
-    });
-
-    function operationFilters() {
-      return {
-        keyword: $("keyword").value.trim(),
-        bulkLabel: $("bulkLabel").value.trim(),
-        ticketId: $("ticketId").value.trim(),
-        creatorId: $("creatorId").value.trim(),
-        status: $("status").value,
-        dateFrom: $("dateFrom").value,
-        dateTo: $("dateTo").value
-      };
+    async function loadTickets(useLoader=true){
+      const run=async()=>{$("ticketBody").innerHTML=`<tr><td colspan="8">조회 중...</td></tr>`;$("emptyTickets").style.display="none";try{const data=await api("list",operationFilters());tickets=Array.isArray(data.tickets)?data.tickets:[];renderTickets();renderOperationsDashboard()}catch(err){$("ticketBody").innerHTML=`<tr><td colspan="8">${escapeHtml(err.message)}</td></tr>`}};
+      return useLoader?withLoading("티켓을 조회 중입니다...",run):run();
     }
 
-    function analyticsFilters() {
-      return {
-        keyword: $("analyticsKeyword").value.trim(),
-        category: $("analyticsCategory").value,
-        status: $("analyticsStatus").value,
-        dateFrom: $("analyticsDateFrom").value,
-        dateTo: $("analyticsDateTo").value
-      };
+    function renderTickets(){
+      $("resultText").textContent=`${tickets.length}건`;$("ticketBody").innerHTML="";
+      if(!tickets.length){$("emptyTickets").style.display="block";return}
+      $("emptyTickets").style.display="none";
+      $("ticketBody").innerHTML=tickets.map(t=>{const reminded=String(t.history||"").includes("[리마인드]");return`<tr><td><button class="ticket-link" type="button" data-id="${escapeHtml(t.ticketId)}">${escapeHtml(t.ticketId)}</button></td><td>${escapeHtml(t.date)}</td><td>${escapeHtml(t.category||"미분류")}</td><td class="clip">${escapeHtml(t.bulkLabel)}</td><td class="clip">${escapeHtml(t.sku)}</td><td>${escapeHtml(t.creatorId)}</td><td>${statusPill(t.status)}</td><td>${reminded?`<span class="remind">리마인드</span>`:""}</td></tr>`}).join("");
+      document.querySelectorAll(".ticket-link").forEach(btn=>btn.addEventListener("click",()=>openDetail(btn.dataset.id)));
     }
 
-    async function loadTickets(useLoader = true) {
-      const run = async () => {
-        $("ticketBody").innerHTML = `<tr><td colspan="8">조회 중...</td></tr>`;
-        $("emptyTickets").style.display = "none";
-
-        try {
-          const data = await api("list", operationFilters());
-          tickets = Array.isArray(data.tickets) ? data.tickets : [];
-          renderTickets();
-          renderOperationsDashboard();
-        } catch (err) {
-          $("ticketBody").innerHTML = `<tr><td colspan="8">${escapeHtml(err.message)}</td></tr>`;
-        }
-      };
-
-      return useLoader ? withLoading("티켓을 조회 중입니다...", run) : run();
+    function renderOperationsDashboard(){
+      const s=countBy(tickets,t=>t.status||"접수"),c=countBy(tickets,t=>t.category||"미분류");
+      $("kpiTotal").textContent=tickets.length;$("kpiReceived").textContent=s["접수"]||0;$("kpiChecking").textContent=s["내용 확인 중"]||0;$("kpiCustomer").textContent=s["고객사 확인 중"]||0;$("kpiDone").textContent=s["완료"]||0;
+      drawChart("statusChart","doughnut",Object.keys(s),Object.values(s));drawChart("categoryChart","bar",Object.keys(c),Object.values(c));
     }
 
-    function renderTickets() {
-      $("resultText").textContent = `${tickets.length}건`;
-      $("ticketBody").innerHTML = "";
+    function countBy(rows,getter){return rows.reduce((acc,row)=>{const key=getter(row)||"미분류";acc[key]=(acc[key]||0)+1;return acc},{})}
+    function drawChart(id,type,labels,data){if(charts[id])charts[id].destroy();const isDoughnut=type==="doughnut",isLine=type==="line";charts[id]=new Chart($(id),{type,data:{labels,datasets:[{data,backgroundColor:isLine?"rgba(66,184,215,.18)":COLORS,borderColor:isLine?"#2f63e7":"#ffffff",borderWidth:isDoughnut?0:2,borderRadius:isDoughnut?0:7,fill:isLine,tension:.35,pointRadius:isLine?4:0,pointBackgroundColor:"#2f63e7"}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:isDoughnut,position:"bottom"}},scales:isDoughnut?{}:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{precision:0}}}}})}
 
-      if (!tickets.length) {
-        $("emptyTickets").style.display = "block";
-        return;
-      }
-
-      $("emptyTickets").style.display = "none";
-
-      $("ticketBody").innerHTML = tickets.map(ticket => {
-        const reminded = String(ticket.history || "").includes("[리마인드]");
-
-        return `
-          <tr>
-            <td>
-              <button class="ticket-link" type="button" data-id="${escapeHtml(ticket.ticketId)}">
-                ${escapeHtml(ticket.ticketId)}
-              </button>
-            </td>
-            <td>${escapeHtml(ticket.date)}</td>
-            <td>${escapeHtml(ticket.category || "미분류")}</td>
-            <td class="clip">${escapeHtml(ticket.bulkLabel)}</td>
-            <td class="clip">${escapeHtml(ticket.sku)}</td>
-            <td>${escapeHtml(ticket.creatorId)}</td>
-            <td>${statusPill(ticket.status)}</td>
-            <td>${reminded ? `<span class="remind">리마인드</span>` : ""}</td>
-          </tr>
-        `;
-      }).join("");
-
-      document.querySelectorAll(".ticket-link").forEach(button => {
-        button.addEventListener("click", () => openDetail(button.dataset.id));
-      });
-    }
-
-    function renderOperationsDashboard() {
-      const statusCounts = countBy(tickets, ticket => ticket.status || "접수");
-      const categoryCounts = countBy(tickets, ticket => ticket.category || "미분류");
-
-      $("kpiTotal").textContent = tickets.length;
-      $("kpiReceived").textContent = statusCounts["접수"] || 0;
-      $("kpiChecking").textContent = statusCounts["내용 확인 중"] || 0;
-      $("kpiCustomer").textContent = statusCounts["고객사 확인 중"] || 0;
-      $("kpiDone").textContent = statusCounts["완료"] || 0;
-
-      drawChart("statusChart", "doughnut", Object.keys(statusCounts), Object.values(statusCounts));
-      drawChart("categoryChart", "bar", Object.keys(categoryCounts), Object.values(categoryCounts));
-    }
-
-    function countBy(rows, getter) {
-      return rows.reduce((acc, row) => {
-        const key = getter(row) || "미분류";
-        acc[key] = (acc[key] || 0) + 1;
-        return acc;
-      }, {});
-    }
-
-    function drawChart(id, type, labels, data) {
-      if (charts[id]) {
-        charts[id].destroy();
-      }
-
-      const isDoughnut = type === "doughnut";
-      const isLine = type === "line";
-
-      charts[id] = new Chart($(id), {
-        type,
-        data: {
-          labels,
-          datasets: [{
-            data,
-            backgroundColor: isLine ? "rgba(66,184,215,.18)" : COLORS,
-            borderColor: isLine ? "#2f63e7" : "#ffffff",
-            borderWidth: isDoughnut ? 0 : 2,
-            borderRadius: isDoughnut ? 0 : 7,
-            fill: isLine,
-            tension: .35,
-            pointRadius: isLine ? 4 : 0,
-            pointBackgroundColor: "#2f63e7"
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: isDoughnut,
-              position: "bottom"
-            }
-          },
-          scales: isDoughnut ? {} : {
-            x: { grid: { display: false } },
-            y: { beginAtZero: true, ticks: { precision: 0 } }
-          }
-        }
-      });
-    }
-
-    function openDetail(ticketId) {
-      currentTicket = tickets.find(ticket => ticket.ticketId === ticketId);
-      if (!currentTicket) return;
-
-      $("detailTitle").textContent = currentTicket.ticketId;
-      $("detailStatus").value = currentTicket.status || "접수";
-
-      const rows = [
-        ["Ticket ID", currentTicket.ticketId],
-        ["Date", currentTicket.date],
-        ["Category", currentTicket.category],
-        ["Bulk Label", currentTicket.bulkLabel],
-        ["SKU", currentTicket.sku],
-        ["작업자", currentTicket.creatorId],
-        ["Status", currentTicket.status],
-        ["Comment", currentTicket.comment],
-        ["History", currentTicket.history]
-      ];
-
-      $("detailGrid").innerHTML = rows.map(([label, value]) => {
-        return `
-          <b>${escapeHtml(label)}</b>
-          <div>${escapeHtml(value || "").replaceAll("\n", "<br>")}</div>
-        `;
-      }).join("");
-
-      if (currentTicket.image) {
-        $("photoLink").style.display = "inline-flex";
-        $("photoLink").href = currentTicket.image;
-      } else {
-        $("photoLink").style.display = "none";
-        $("photoLink").href = "#";
-      }
-
+    function openDetail(ticketId){
+      currentTicket=tickets.find(t=>t.ticketId===ticketId);if(!currentTicket)return;
+      $("detailTitle").textContent=currentTicket.ticketId;$("detailStatus").value=currentTicket.status||"접수";
+      const rows=[["Ticket ID",currentTicket.ticketId],["Date",currentTicket.date],["Category",currentTicket.category],["Bulk Label",currentTicket.bulkLabel],["SKU",currentTicket.sku],["작업자",currentTicket.creatorId],["Status",currentTicket.status],["Comment",currentTicket.comment],["History",currentTicket.history]];
+      $("detailGrid").innerHTML=rows.map(([l,v])=>`<b>${escapeHtml(l)}</b><div>${escapeHtml(v||"").replaceAll("\n","<br>")}</div>`).join("");
+      if(currentTicket.image){$("photoLink").style.display="inline-flex";$("photoLink").href=currentTicket.image}else{$("photoLink").style.display="none";$("photoLink").href="#"}
       detailDialog.showModal();
     }
 
-    $("statusUpdateBtn").addEventListener("click", async () => {
-      if (!currentTicket) return;
+    $("statusUpdateBtn").addEventListener("click",async()=>{if(!currentTicket)return;const nextStatus=$("detailStatus").value;if(!confirm(`${currentTicket.ticketId} 상태를 '${nextStatus}'로 변경할까요?`))return;try{await withLoading("상태를 변경 중입니다...",async()=>{await api("updateStatus",{ticketId:currentTicket.ticketId,status:nextStatus});detailDialog.close();await loadTickets(false);await loadAnalytics(false)})}catch(err){alert(err.message||"상태 변경 실패")}});
+    $("deleteBtn").addEventListener("click",async()=>{if(!currentTicket)return;if(!confirm(`${currentTicket.ticketId} 티켓을 삭제할까요?`))return;try{await withLoading("티켓을 삭제 중입니다...",async()=>{await api("deleteTicket",{ticketId:currentTicket.ticketId});detailDialog.close();await loadTickets(false);await loadAnalytics(false)})}catch(err){alert(err.message||"삭제 실패")}});
 
-      const nextStatus = $("detailStatus").value;
-
-      if (!confirm(`${currentTicket.ticketId} 상태를 '${nextStatus}'로 변경할까요?`)) {
-        return;
-      }
-
-      try {
-        await withLoading("상태를 변경 중입니다...", async () => {
-          await api("updateStatus", {
-            ticketId: currentTicket.ticketId,
-            status: nextStatus
-          });
-
-          detailDialog.close();
-          await loadTickets(false);
-          await loadAnalytics(false);
-        });
-      } catch (err) {
-        alert(err.message || "상태 변경 실패");
-      }
-    });
-
-    $("deleteBtn").addEventListener("click", async () => {
-      if (!currentTicket) return;
-
-      if (!confirm(`${currentTicket.ticketId} 티켓을 삭제할까요?`)) {
-        return;
-      }
-
-      try {
-        await withLoading("티켓을 삭제 중입니다...", async () => {
-          await api("deleteTicket", {
-            ticketId: currentTicket.ticketId
-          });
-
-          detailDialog.close();
-          await loadTickets(false);
-          await loadAnalytics(false);
-        });
-      } catch (err) {
-        alert(err.message || "삭제 실패");
-      }
-    });
-
-    async function loadAnalytics(useLoader = true) {
-      const run = async () => {
-        $("skuBody").innerHTML = `<tr><td colspan="7">조회 중...</td></tr>`;
-        $("emptySku").style.display = "none";
-
-        try {
-          const filters = analyticsFilters();
-
-          const ticketData = await api("list", filters);
-          const itemData = await api("listItems", filters);
-
-          analyticsTickets = Array.isArray(ticketData.tickets) ? ticketData.tickets : [];
-          skuItems = Array.isArray(itemData.items) ? itemData.items : [];
-
-          renderAnalytics();
-        } catch (err) {
-          $("skuBody").innerHTML = `<tr><td colspan="7">${escapeHtml(err.message)}</td></tr>`;
-        }
-      };
-
-      return useLoader ? withLoading("분석 데이터를 조회 중입니다...", run) : run();
+    async function loadAnalytics(useLoader=true){
+      const run=async()=>{$("skuBody").innerHTML=`<tr><td colspan="7">조회 중...</td></tr>`;$("emptySku").style.display="none";try{const filters=analyticsFilters();const ticketData=await api("list",filters);const itemData=await api("listItems",filters);analyticsTickets=Array.isArray(ticketData.tickets)?ticketData.tickets:[];skuItems=Array.isArray(itemData.items)?itemData.items:[];renderAnalytics()}catch(err){$("skuBody").innerHTML=`<tr><td colspan="7">${escapeHtml(err.message)}</td></tr>`}};
+      return useLoader?withLoading("분석 데이터를 조회 중입니다...",run):run();
     }
 
-    function renderAnalytics() {
-      const statusCounts = countBy(analyticsTickets, ticket => ticket.status || "접수");
-      const dailyTickets = countBy(analyticsTickets, ticket => String(ticket.date || "").slice(0, 10) || "미분류");
-      const skuByCategory = countBy(skuItems, item => item.category || "미분류");
-      const bulkByCategory = bulkVolumeByCategory(analyticsTickets);
-
-      const processing =
-        (statusCounts["접수"] || 0) +
-        (statusCounts["내용 확인 중"] || 0) +
-        (statusCounts["고객사 확인 중"] || 0);
-
-      const done = statusCounts["완료"] || 0;
-      const total = analyticsTickets.length;
-
-      $("analyticsTotalTickets").textContent = total;
-      $("analyticsBulkCount").textContent = uniqueBulkCount(analyticsTickets);
-      $("analyticsProcessing").textContent = processing;
-      $("analyticsReminderCount").textContent = analyticsTickets.filter(ticket => {
-        return String(ticket.history || "").includes("[리마인드]");
-      }).length;
-
-      $("analyticsCompleteRate").textContent = total
-        ? `${Math.round(done / total * 100)}%`
-        : "0%";
-
-      const dateLabels = Object.keys(dailyTickets).sort();
-
-      drawChart("dailyChart", "line", dateLabels, dateLabels.map(label => dailyTickets[label]));
-      drawChart("analyticsStatusChart", "doughnut", Object.keys(statusCounts), Object.values(statusCounts));
-      drawChart("skuCategoryChart", "bar", Object.keys(skuByCategory), Object.values(skuByCategory));
-      drawChart("bulkCategoryChart", "bar", Object.keys(bulkByCategory), Object.values(bulkByCategory));
-
-      renderSkuTable();
+    function renderAnalytics(){
+      const s=countBy(analyticsTickets,t=>t.status||"접수"),daily=countBy(analyticsTickets,t=>String(t.date||"").slice(0,10)||"미분류"),skuByCategory=countBy(skuItems,i=>i.category||"미분류"),bulkByCategory=bulkVolumeByCategory(analyticsTickets);
+      const processing=(s["접수"]||0)+(s["내용 확인 중"]||0)+(s["고객사 확인 중"]||0),done=s["완료"]||0,total=analyticsTickets.length;
+      $("analyticsTotalTickets").textContent=total;$("analyticsBulkCount").textContent=uniqueBulkCount(analyticsTickets);$("analyticsProcessing").textContent=processing;$("analyticsReminderCount").textContent=analyticsTickets.filter(t=>String(t.history||"").includes("[리마인드]")).length;$("analyticsCompleteRate").textContent=total?`${Math.round(done/total*100)}%`:"0%";
+      const dateLabels=Object.keys(daily).sort();
+      drawChart("dailyChart","line",dateLabels,dateLabels.map(l=>daily[l]));drawChart("analyticsStatusChart","doughnut",Object.keys(s),Object.values(s));drawChart("skuCategoryChart","bar",Object.keys(skuByCategory),Object.values(skuByCategory));drawChart("bulkCategoryChart","bar",Object.keys(bulkByCategory),Object.values(bulkByCategory));renderSkuTable();
     }
 
-    function renderSkuTable() {
-      $("skuResultText").textContent = `${skuItems.length}건`;
-      $("skuBody").innerHTML = "";
-
-      if (!skuItems.length) {
-        $("emptySku").style.display = "block";
-        return;
-      }
-
-      $("emptySku").style.display = "none";
-
-      $("skuBody").innerHTML = skuItems.slice(0, 500).map(item => {
-        return `
-          <tr>
-            <td>${escapeHtml(item.ticketId)}</td>
-            <td>${escapeHtml(item.date)}</td>
-            <td>${escapeHtml(item.category || "미분류")}</td>
-            <td class="clip">${escapeHtml(item.bulkLabel)}</td>
-            <td class="clip">${escapeHtml(item.sku)}</td>
-            <td>${escapeHtml(item.creatorId)}</td>
-            <td>${statusPill(item.status)}</td>
-          </tr>
-        `;
-      }).join("");
+    function renderSkuTable(){
+      $("skuResultText").textContent=`${skuItems.length}건`;$("skuBody").innerHTML="";
+      if(!skuItems.length){$("emptySku").style.display="block";return}
+      $("emptySku").style.display="none";
+      $("skuBody").innerHTML=skuItems.slice(0,500).map(i=>`<tr><td>${escapeHtml(i.ticketId)}</td><td>${escapeHtml(i.date)}</td><td>${escapeHtml(i.category||"미분류")}</td><td class="clip">${escapeHtml(i.bulkLabel)}</td><td class="clip">${escapeHtml(i.sku)}</td><td>${escapeHtml(i.creatorId)}</td><td>${statusPill(i.status)}</td></tr>`).join("");
     }
 
-    function normalizeCsvText(value) {
-      return String(value ?? "")
-        .replace(/\r\n/g, "\n")
-        .replace(/\r/g, "\n")
-        .split(/[\n,\t]+/)
-        .map(item => item.trim())
+    function normalizeCsvText(value){
+      return String(value??"")
+        .replace(/\r\n/g,"\n")
+        .replace(/\r/g,"\n")
+        .split(/[\n,\t,]+/)
+        .map(item=>item.trim())
         .filter(Boolean)
         .join(";");
     }
 
-    function csvCell(value) {
-      const text = normalizeCsvText(value);
-      return `"${text.replaceAll('"', '""')}"`;
+    function csvCell(value){
+      const text=normalizeCsvText(value);
+      const excelTextFormula=`="${text}"`;
+      return `"${excelTextFormula.replaceAll('"','""')}"`;
     }
 
-    function toCsv(rows, columns) {
-      const header = columns.map(column => `"${column.label}"`).join(",");
-      const body = rows.map(row => {
-        return columns.map(column => csvCell(row[column.key] || "")).join(",");
-      });
-
-      return "\uFEFF" + [header, ...body].join("\r\n");
+    function toCsv(rows,columns){
+      const header=columns.map(c=>`"${c.label}"`).join(",");
+      const body=rows.map(row=>columns.map(c=>csvCell(row[c.key]||"")).join(","));
+      return "\uFEFF"+[header,...body].join("\r\n");
     }
 
-    function downloadText(filename, text) {
-      const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
+    function downloadText(filename,text){
+      const blob=new Blob([text],{type:"text/csv;charset=utf-8"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
       URL.revokeObjectURL(url);
     }
 
-    function ticketCsvRows(rows) {
-      return rows.map(ticket => ({
-        ticketId: ticket.ticketId,
-        date: ticket.date,
-        category: ticket.category,
-        bulkLabel: ticket.bulkLabel,
-        sku: ticket.sku,
-        creatorId: ticket.creatorId,
-        image: ticket.image,
-        comment: ticket.comment,
-        status: ticket.status,
-        history: ticket.history
-      }));
-    }
+    function ticketCsvRows(rows){return rows.map(t=>({ticketId:t.ticketId,date:t.date,category:t.category,bulkLabel:t.bulkLabel,sku:t.sku,creatorId:t.creatorId,image:t.image,comment:t.comment,status:t.status,history:t.history}))}
 
-    function itemCsvRows(rows) {
-      return rows.map(item => ({
-        ticketId: item.ticketId,
-        date: item.date,
-        category: item.category,
-        bulkLabel: item.bulkLabel,
-        sku: item.sku,
-        creatorId: item.creatorId,
-        status: item.status,
-        reminded: item.reminded,
-        image: item.image,
-        comment: item.comment
-      }));
-    }
-
-    $("ticketsCsvBtn").addEventListener("click", async () => {
-      await withLoading("Tickets CSV 생성 중입니다...", async () => {
-        const csv = toCsv(ticketCsvRows(tickets), [
-          { key: "ticketId", label: "Ticket ID" },
-          { key: "date", label: "Date" },
-          { key: "category", label: "Category" },
-          { key: "bulkLabel", label: "Bulk Label" },
-          { key: "sku", label: "SKU" },
-          { key: "creatorId", label: "Creator ID" },
-          { key: "image", label: "Image" },
-          { key: "comment", label: "Comment" },
-          { key: "status", label: "Status" },
-          { key: "history", label: "History" }
+    $("ticketsCsvBtn").addEventListener("click",async()=>{
+      await withLoading("Tickets CSV 생성 중입니다...",async()=>{
+        const csv=toCsv(ticketCsvRows(tickets),[
+          {key:"ticketId",label:"Ticket ID"},{key:"date",label:"Date"},{key:"category",label:"Category"},{key:"bulkLabel",label:"Bulk Label"},{key:"sku",label:"SKU"},{key:"creatorId",label:"Creator ID"},{key:"image",label:"Image"},{key:"comment",label:"Comment"},{key:"status",label:"Status"},{key:"history",label:"History"}
         ]);
-
-        downloadText(`rt_tickets_${todayString()}.csv`, csv);
+        downloadText(`rt_tickets_${todayString()}.csv`,csv);
       });
     });
 
-    $("skuCsvBtn").addEventListener("click", async () => {
-      try {
-        await withLoading("SKU CSV 생성 중입니다...", async () => {
-          const data = await api("listItems", operationFilters());
-          const csv = toCsv(itemCsvRows(data.items || []), [
-            { key: "ticketId", label: "Ticket ID" },
-            { key: "date", label: "Date" },
-            { key: "category", label: "Category" },
-            { key: "bulkLabel", label: "Bulk Label" },
-            { key: "sku", label: "SKU" },
-            { key: "creatorId", label: "Creator ID" },
-            { key: "status", label: "Status" },
-            { key: "reminded", label: "Reminded" },
-            { key: "image", label: "Image Folder" },
-            { key: "comment", label: "Comment" }
-          ]);
-
-          downloadText(`rt_sku_items_${todayString()}.csv`, csv);
-        });
-      } catch (err) {
-        alert(err.message || "SKU CSV 다운로드 실패");
-      }
-    });
-
-    $("analyticsCsvBtn").addEventListener("click", async () => {
-      await withLoading("Analytics CSV 생성 중입니다...", async () => {
-        const csv = toCsv(ticketCsvRows(analyticsTickets), [
-          { key: "ticketId", label: "Ticket ID" },
-          { key: "date", label: "Date" },
-          { key: "category", label: "Category" },
-          { key: "bulkLabel", label: "Bulk Label" },
-          { key: "sku", label: "SKU" },
-          { key: "creatorId", label: "Creator ID" },
-          { key: "image", label: "Image" },
-          { key: "comment", label: "Comment" },
-          { key: "status", label: "Status" },
-          { key: "history", label: "History" }
+    $("skuCsvBtn").addEventListener("click",async()=>{
+      try{await withLoading("SKU CSV 생성 중입니다...",async()=>{
+        const data=await api("list",operationFilters());
+        const rows=ticketCsvRows(data.tickets||[]);
+        const csv=toCsv(rows,[
+          {key:"ticketId",label:"Ticket ID"},{key:"date",label:"Date"},{key:"category",label:"Category"},{key:"bulkLabel",label:"Bulk Label"},{key:"sku",label:"SKU"},{key:"creatorId",label:"Creator ID"},{key:"image",label:"Image"},{key:"comment",label:"Comment"},{key:"status",label:"Status"},{key:"history",label:"History"}
         ]);
+        downloadText(`rt_sku_merged_${todayString()}.csv`,csv);
+      })}catch(err){alert(err.message||"SKU CSV 다운로드 실패")}
+    });
 
-        downloadText(`rt_analytics_tickets_${todayString()}.csv`, csv);
+    $("analyticsCsvBtn").addEventListener("click",async()=>{
+      await withLoading("Analytics CSV 생성 중입니다...",async()=>{
+        const csv=toCsv(ticketCsvRows(analyticsTickets),[
+          {key:"ticketId",label:"Ticket ID"},{key:"date",label:"Date"},{key:"category",label:"Category"},{key:"bulkLabel",label:"Bulk Label"},{key:"sku",label:"SKU"},{key:"creatorId",label:"Creator ID"},{key:"image",label:"Image"},{key:"comment",label:"Comment"},{key:"status",label:"Status"},{key:"history",label:"History"}
+        ]);
+        downloadText(`rt_analytics_tickets_${todayString()}.csv`,csv);
       });
     });
 
-    $("analyticsSkuCsvBtn").addEventListener("click", async () => {
-      try {
-        await withLoading("SKU CSV 생성 중입니다...", async () => {
-          const data = await api("listItems", analyticsFilters());
-          const csv = toCsv(itemCsvRows(data.items || []), [
-            { key: "ticketId", label: "Ticket ID" },
-            { key: "date", label: "Date" },
-            { key: "category", label: "Category" },
-            { key: "bulkLabel", label: "Bulk Label" },
-            { key: "sku", label: "SKU" },
-            { key: "creatorId", label: "Creator ID" },
-            { key: "status", label: "Status" },
-            { key: "reminded", label: "Reminded" },
-            { key: "image", label: "Image Folder" },
-            { key: "comment", label: "Comment" }
-          ]);
-
-          downloadText(`rt_sku_items_${todayString()}.csv`, csv);
-        });
-      } catch (err) {
-        alert(err.message || "SKU CSV 다운로드 실패");
-      }
+    $("analyticsSkuCsvBtn").addEventListener("click",async()=>{
+      try{await withLoading("SKU CSV 생성 중입니다...",async()=>{
+        const data=await api("list",analyticsFilters());
+        const rows=ticketCsvRows(data.tickets||[]);
+        const csv=toCsv(rows,[
+          {key:"ticketId",label:"Ticket ID"},{key:"date",label:"Date"},{key:"category",label:"Category"},{key:"bulkLabel",label:"Bulk Label"},{key:"sku",label:"SKU"},{key:"creatorId",label:"Creator ID"},{key:"image",label:"Image"},{key:"comment",label:"Comment"},{key:"status",label:"Status"},{key:"history",label:"History"}
+        ]);
+        downloadText(`rt_sku_merged_${todayString()}.csv`,csv);
+      })}catch(err){alert(err.message||"SKU CSV 다운로드 실패")}
     });
 
-    $("searchBtn").addEventListener("click", () => loadTickets());
+    $("searchBtn").addEventListener("click",()=>loadTickets());
+    $("todayBtn").addEventListener("click",()=>{const t=todayString();$("dateFrom").value=t;$("dateTo").value=t;loadTickets()});
+    $("sevenBtn").addEventListener("click",()=>{$("dateFrom").value=addDays(-6);$("dateTo").value=todayString();loadTickets()});
+    $("thirtyBtn").addEventListener("click",()=>{$("dateFrom").value=addDays(-29);$("dateTo").value=todayString();loadTickets()});
+    $("allDateBtn").addEventListener("click",()=>{$("dateFrom").value="";$("dateTo").value="";loadTickets()});
+    $("analyticsSearchBtn").addEventListener("click",()=>loadAnalytics());
+    $("analyticsTodayBtn").addEventListener("click",()=>{const t=todayString();$("analyticsDateFrom").value=t;$("analyticsDateTo").value=t;loadAnalytics()});
+    $("analyticsAllBtn").addEventListener("click",()=>{$("analyticsDateFrom").value="";$("analyticsDateTo").value="";loadAnalytics()});
+    ["keyword","bulkLabel","ticketId","creatorId"].forEach(id=>{$(id).addEventListener("keydown",e=>{if(e.key==="Enter")loadTickets()})});
+    $("status").addEventListener("change",()=>loadTickets());
+    $("analyticsKeyword").addEventListener("keydown",e=>{if(e.key==="Enter")loadAnalytics()});
+    ["analyticsCategory","analyticsStatus"].forEach(id=>{$(id).addEventListener("change",()=>loadAnalytics())});
 
-    $("todayBtn").addEventListener("click", () => {
-      const today = todayString();
-      $("dateFrom").value = today;
-      $("dateTo").value = today;
-      loadTickets();
-    });
-
-    $("sevenBtn").addEventListener("click", () => {
-      $("dateFrom").value = addDays(-6);
-      $("dateTo").value = todayString();
-      loadTickets();
-    });
-
-    $("thirtyBtn").addEventListener("click", () => {
-      $("dateFrom").value = addDays(-29);
-      $("dateTo").value = todayString();
-      loadTickets();
-    });
-
-    $("allDateBtn").addEventListener("click", () => {
-      $("dateFrom").value = "";
-      $("dateTo").value = "";
-      loadTickets();
-    });
-
-    $("analyticsSearchBtn").addEventListener("click", () => loadAnalytics());
-
-    $("analyticsTodayBtn").addEventListener("click", () => {
-      const today = todayString();
-      $("analyticsDateFrom").value = today;
-      $("analyticsDateTo").value = today;
-      loadAnalytics();
-    });
-
-    $("analyticsAllBtn").addEventListener("click", () => {
-      $("analyticsDateFrom").value = "";
-      $("analyticsDateTo").value = "";
-      loadAnalytics();
-    });
-
-    ["keyword", "bulkLabel", "ticketId", "creatorId"].forEach(id => {
-      $(id).addEventListener("keydown", event => {
-        if (event.key === "Enter") {
-          loadTickets();
-        }
-      });
-    });
-
-    $("status").addEventListener("change", () => loadTickets());
-
-    $("analyticsKeyword").addEventListener("keydown", event => {
-      if (event.key === "Enter") {
-        loadAnalytics();
-      }
-    });
-
-    ["analyticsCategory", "analyticsStatus"].forEach(id => {
-      $(id).addEventListener("change", () => loadAnalytics());
-    });
-
-    async function init() {
-      const token = localStorage.getItem(TOKEN_KEY);
-
-      if (!token) {
-        showLogin();
-        return;
-      }
-
-      try {
-        await withLoading("관리자 정보를 확인 중입니다...", async () => {
-          const data = await api("validateToken");
-
-          if (data.role !== "admin") {
-            throw new Error("관리자 권한이 없습니다.");
-          }
-
-          showApp();
-          setDefaultDates();
-
-          await loadTickets(false);
-          await loadAnalytics(false);
-        });
-      } catch (err) {
-        localStorage.removeItem(TOKEN_KEY);
-        showLogin();
-      }
+    async function init(){
+      const token=localStorage.getItem(TOKEN_KEY);
+      if(!token){showLogin();return}
+      try{await withLoading("관리자 정보를 확인 중입니다...",async()=>{const data=await api("validateToken");if(data.role!=="admin")throw new Error("관리자 권한이 없습니다.");showApp();setDefaultDates();await loadTickets(false);await loadAnalytics(false)})}
+      catch(err){localStorage.removeItem(TOKEN_KEY);showLogin()}
     }
 
     init();
