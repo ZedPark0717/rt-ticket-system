@@ -948,14 +948,10 @@
         .map(input => input.value);
     }
 
-    function setRoleChecks(prefix, roles) {
-      document.querySelectorAll(`input[name="${prefix}"]`).forEach(input => {
-        input.checked = roles.includes(input.value);
-      });
-    }
-
     async function requireVerification() {
       await api("sendVerificationCode", { purpose: "systemAction" });
+
+      hideLoading();
 
       return new Promise((resolve, reject) => {
         state.pendingVerify = { resolve, reject };
@@ -978,6 +974,7 @@
 
       try {
         const code = await requireVerification();
+
         showLoading("작업 처리 중입니다...");
         await callback(code);
         await refreshAll();
@@ -1282,6 +1279,7 @@
     });
 
     $("refreshBtn").addEventListener("click", refreshAll);
+
     $("reloadUsersBtn").addEventListener("click", async () => {
       showLoading("계정 목록을 불러오는 중입니다...");
       try { await loadUsers(); } finally { hideLoading(); }
