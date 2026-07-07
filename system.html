@@ -350,6 +350,21 @@
       border-radius:var(--radius);
     }
 
+    .log-scroll {
+      max-height:420px;
+      overflow-y:auto;
+    }
+
+    .log-scroll table {
+      margin:0;
+    }
+
+    .log-scroll thead th {
+      position:sticky;
+      top:0;
+      z-index:2;
+    }
+
     table {
       width:100%;
       border-collapse:collapse;
@@ -569,22 +584,10 @@
 
     <div class="wrap">
       <section class="dashboard">
-        <div class="metric">
-          <span>전체 계정</span>
-          <strong id="metricUsers">0</strong>
-        </div>
-        <div class="metric">
-          <span>활성 계정</span>
-          <strong id="metricActiveUsers">0</strong>
-        </div>
-        <div class="metric">
-          <span>활성 세션</span>
-          <strong id="metricSessions">0</strong>
-        </div>
-        <div class="metric">
-          <span>최근 로그인 기록</span>
-          <strong id="metricAttempts">0</strong>
-        </div>
+        <div class="metric"><span>전체 계정</span><strong id="metricUsers">0</strong></div>
+        <div class="metric"><span>활성 계정</span><strong id="metricActiveUsers">0</strong></div>
+        <div class="metric"><span>활성 세션</span><strong id="metricSessions">0</strong></div>
+        <div class="metric"><span>최근 로그인 기록</span><strong id="metricAttempts">0</strong></div>
       </section>
 
       <nav class="tabs">
@@ -598,9 +601,7 @@
       <section id="usersPanel" class="panel active">
         <div class="grid">
           <article class="card">
-            <div class="card-head">
-              <h2>계정 생성</h2>
-            </div>
+            <div class="card-head"><h2>계정 생성</h2></div>
             <div class="card-body">
               <div class="notice">계정 생성은 이메일 인증코드 확인 후 처리됩니다.</div>
 
@@ -706,7 +707,7 @@
               </div>
             </div>
             <div class="card-body">
-              <div class="table-wrap">
+              <div class="table-wrap log-scroll">
                 <table>
                   <thead>
                     <tr>
@@ -733,7 +734,7 @@
               </div>
             </div>
             <div class="card-body">
-              <div class="table-wrap">
+              <div class="table-wrap log-scroll">
                 <table>
                   <thead>
                     <tr>
@@ -817,9 +818,7 @@
 
       <section id="exportPanel" class="panel">
         <article class="card">
-          <div class="card-head">
-            <h2>System Export</h2>
-          </div>
+          <div class="card-head"><h2>System Export</h2></div>
           <div class="card-body">
             <div class="notice">보안/감사용 시트 데이터를 CSV로 다운로드합니다.</div>
             <div class="row-actions">
@@ -840,9 +839,7 @@
 
   <div id="verifyModal" class="modal-backdrop">
     <div class="modal">
-      <div class="modal-head">
-        <h3>이메일 인증코드 확인</h3>
-      </div>
+      <div class="modal-head"><h3>이메일 인증코드 확인</h3></div>
       <div class="modal-body">
         <p id="verifyMessage" class="muted">인증코드를 메일로 발송했습니다.</p>
         <div class="field">
@@ -860,9 +857,7 @@
 
   <div id="editUserModal" class="modal-backdrop">
     <div class="modal">
-      <div class="modal-head">
-        <h3>계정 수정</h3>
-      </div>
+      <div class="modal-head"><h3>계정 수정</h3></div>
       <div class="modal-body">
         <input id="editUserId" type="hidden" />
         <div class="field">
@@ -894,9 +889,7 @@
 
   <div id="resetPwModal" class="modal-backdrop">
     <div class="modal">
-      <div class="modal-head">
-        <h3>비밀번호 재설정</h3>
-      </div>
+      <div class="modal-head"><h3>비밀번호 재설정</h3></div>
       <div class="modal-body">
         <input id="resetPwUserId" type="hidden" />
         <div class="field">
@@ -917,9 +910,7 @@
 
   <div id="confirmModal" class="modal-backdrop">
     <div class="modal">
-      <div class="modal-head">
-        <h3 id="confirmTitle">확인</h3>
-      </div>
+      <div class="modal-head"><h3 id="confirmTitle">확인</h3></div>
       <div class="modal-body">
         <p id="confirmMessage" class="muted"></p>
       </div>
