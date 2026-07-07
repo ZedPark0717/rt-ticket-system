@@ -18,7 +18,6 @@
       --muted:#68768a;
       --danger:#ef4444;
       --ok:#10a66a;
-      --warn:#f59e0b;
       --radius:8px;
       --shadow:0 18px 45px rgba(7,29,58,.12);
     }
@@ -34,7 +33,7 @@
 
     button,input,select,textarea { font:inherit; }
     button { border:0; cursor:pointer; }
-    button:disabled { opacity:.6; cursor:not-allowed; }
+    button:disabled { opacity:.55; cursor:not-allowed; }
     a { color:inherit; text-decoration:none; }
 
     .login-page {
@@ -68,11 +67,11 @@
     }
 
     .brand-fallback {
+      display:none;
       font-size:28px;
       font-weight:900;
       letter-spacing:1px;
       color:#000;
-      display:none;
     }
 
     .login-title {
@@ -115,17 +114,10 @@
       box-shadow:0 0 0 3px rgba(66,184,215,.18);
     }
 
-    textarea {
-      resize:none;
-      min-height:92px;
-      overflow-y:auto;
-    }
-
     .btn {
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      gap:7px;
       min-height:40px;
       padding:0 14px;
       border-radius:var(--radius);
@@ -138,7 +130,7 @@
     .sky { background:#eaf7fb; color:var(--navy); border:1px solid #bfe8f3; }
     .ghost { background:#eaf0f8; color:var(--navy); }
     .danger { background:#fee2e2; color:#b91c1c; }
-    .success { background:#dcfce7; color:#047857; }
+    .okbtn { background:#dcfce7; color:#047857; }
 
     .error {
       display:none;
@@ -174,13 +166,6 @@
       align-items:center;
       justify-content:space-between;
       gap:16px;
-    }
-
-    .top-title {
-      display:flex;
-      align-items:center;
-      gap:14px;
-      min-width:0;
     }
 
     .top-title strong {
@@ -277,13 +262,8 @@
       color:#fff;
     }
 
-    .panel {
-      display:none;
-    }
-
-    .panel.active {
-      display:block;
-    }
+    .panel { display:none; }
+    .panel.active { display:block; }
 
     .grid {
       display:grid;
@@ -316,9 +296,7 @@
       color:var(--navy);
     }
 
-    .card-body {
-      padding:16px;
-    }
+    .card-body { padding:16px; }
 
     .form-grid {
       display:grid;
@@ -326,29 +304,43 @@
       gap:12px;
     }
 
-    .form-grid .full {
-      grid-column:1 / -1;
-    }
+    .form-grid .full { grid-column:1 / -1; }
 
-    .check-row {
+    .role-buttons {
       display:flex;
-      align-items:center;
-      gap:12px;
-      min-height:42px;
+      gap:8px;
       flex-wrap:wrap;
     }
 
-    .check-row label {
+    .role-choice {
+      position:relative;
       display:inline-flex;
       align-items:center;
-      gap:7px;
-      font-size:13px;
-      font-weight:800;
+      justify-content:center;
+      min-height:38px;
+      padding:0 13px;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      background:#f4f8fc;
       color:var(--navy);
+      font-size:13px;
+      font-weight:900;
+      cursor:pointer;
+      user-select:none;
     }
 
-    .check-row input {
-      width:auto;
+    .role-choice input {
+      position:absolute;
+      opacity:0;
+      pointer-events:none;
+      width:1px;
+      height:1px;
+    }
+
+    .role-choice:has(input:checked) {
+      background:var(--navy);
+      border-color:var(--navy);
+      color:#fff;
     }
 
     .table-wrap {
@@ -444,7 +436,7 @@
     }
 
     .modal {
-      width:min(460px,100%);
+      width:min(520px,100%);
       background:#fff;
       border-radius:var(--radius);
       border:1px solid var(--line);
@@ -464,9 +456,7 @@
       color:var(--navy);
     }
 
-    .modal-body {
-      padding:16px;
-    }
+    .modal-body { padding:16px; }
 
     .modal-actions {
       padding:0 16px 16px;
@@ -564,18 +554,15 @@
     <header class="topbar">
       <div class="topbar-inner">
         <div class="top-title">
-          <div>
-            <strong>RT Ticket System Admin</strong>
-            <span>계정, 세션, 보안 로그, 시스템 설정 관리</span>
-          </div>
+          <strong>RT Ticket System Admin</strong>
+          <span>계정, 세션, 보안 로그, 시스템 설정 관리</span>
         </div>
 
         <div class="top-actions">
           <span id="currentUser" class="user-pill">-</span>
           <button id="refreshBtn" class="btn sky" type="button">새로고침</button>
           <button id="logoutBtn" class="btn ghost" type="button">Logout</button>
-          <img class="top-logo" src="assets/maersk-logo.png" alt="MAERSK"
-            onerror="this.style.display='none';" />
+          <img class="top-logo" src="assets/maersk-logo.png" alt="MAERSK" onerror="this.style.display='none';" />
         </div>
       </div>
     </header>
@@ -605,6 +592,7 @@
         <button class="tab" type="button" data-tab="sessionsPanel">세션 관리</button>
         <button class="tab" type="button" data-tab="logsPanel">감사 로그</button>
         <button class="tab" type="button" data-tab="settingsPanel">시스템 설정</button>
+        <button class="tab" type="button" data-tab="exportPanel">Export</button>
       </nav>
 
       <section id="usersPanel" class="panel active">
@@ -629,10 +617,10 @@
 
                 <div class="field full">
                   <label>Roles</label>
-                  <div class="check-row">
-                    <label><input type="checkbox" name="newRole" value="worker" /> worker</label>
-                    <label><input type="checkbox" name="newRole" value="admin" /> admin</label>
-                    <label><input type="checkbox" name="newRole" value="system" /> system</label>
+                  <div class="role-buttons">
+                    <label class="role-choice"><input type="checkbox" name="newRole" value="worker" />worker</label>
+                    <label class="role-choice"><input type="checkbox" name="newRole" value="admin" />admin</label>
+                    <label class="role-choice"><input type="checkbox" name="newRole" value="system" />system</label>
                   </div>
                 </div>
 
@@ -712,7 +700,10 @@
           <article class="card">
             <div class="card-head">
               <h2>감사 로그</h2>
-              <button id="reloadAuditBtn" class="btn sky" type="button">갱신</button>
+              <div class="row-actions">
+                <button id="reloadAuditBtn" class="btn sky" type="button">갱신</button>
+                <button id="exportAuditBtn" class="btn ghost" type="button">CSV</button>
+              </div>
             </div>
             <div class="card-body">
               <div class="table-wrap">
@@ -737,6 +728,7 @@
               <h2>로그인 기록</h2>
               <div class="row-actions">
                 <button id="reloadLoginBtn" class="btn sky" type="button">갱신</button>
+                <button id="exportLoginBtn" class="btn ghost" type="button">CSV</button>
                 <button id="clearLoginBtn" class="btn danger" type="button">실패 기록 초기화</button>
               </div>
             </div>
@@ -763,7 +755,10 @@
         <article class="card">
           <div class="card-head">
             <h2>시스템 설정</h2>
-            <button id="reloadSettingsBtn" class="btn sky" type="button">설정 갱신</button>
+            <div class="row-actions">
+              <button id="reloadSettingsBtn" class="btn sky" type="button">설정 갱신</button>
+              <button id="checkDriveBtn" class="btn ghost" type="button">Drive 점검</button>
+            </div>
           </div>
           <div class="card-body">
             <div class="notice">설정 변경은 이메일 인증코드 확인 후 저장됩니다.</div>
@@ -819,6 +814,27 @@
           </div>
         </article>
       </section>
+
+      <section id="exportPanel" class="panel">
+        <article class="card">
+          <div class="card-head">
+            <h2>System Export</h2>
+          </div>
+          <div class="card-body">
+            <div class="notice">보안/감사용 시트 데이터를 CSV로 다운로드합니다.</div>
+            <div class="row-actions">
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="Tickets">Tickets</button>
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="TicketItems">TicketItems</button>
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="Users">Users</button>
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="Sessions">Sessions</button>
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="AuditLogs">AuditLogs</button>
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="LoginAttempts">LoginAttempts</button>
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="Settings">Settings</button>
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="VerificationCodes">VerificationCodes</button>
+            </div>
+          </div>
+        </article>
+      </section>
     </div>
   </main>
 
@@ -829,17 +845,87 @@
       </div>
       <div class="modal-body">
         <p id="verifyMessage" class="muted">인증코드를 메일로 발송했습니다.</p>
-
         <div class="field">
           <label for="verifyCode">인증코드 6자리</label>
           <input id="verifyCode" inputmode="numeric" maxlength="6" placeholder="000000" />
         </div>
-
         <div id="verifyError" class="error"></div>
       </div>
       <div class="modal-actions">
         <button id="verifyCancelBtn" class="btn ghost" type="button">취소</button>
         <button id="verifySubmitBtn" class="btn primary" type="button">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="editUserModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>계정 수정</h3>
+      </div>
+      <div class="modal-body">
+        <input id="editUserId" type="hidden" />
+        <div class="field">
+          <label>대상 계정</label>
+          <input id="editUserLabel" disabled />
+        </div>
+        <div class="field">
+          <label>Roles</label>
+          <div class="role-buttons">
+            <label class="role-choice"><input type="checkbox" name="editRole" value="worker" />worker</label>
+            <label class="role-choice"><input type="checkbox" name="editRole" value="admin" />admin</label>
+            <label class="role-choice"><input type="checkbox" name="editRole" value="system" />system</label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="editUserActive">Active</label>
+          <select id="editUserActive">
+            <option value="Y">활성</option>
+            <option value="N">비활성</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="editUserCancelBtn" class="btn ghost" type="button">취소</button>
+        <button id="editUserSaveBtn" class="btn primary" type="button">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resetPwModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>비밀번호 재설정</h3>
+      </div>
+      <div class="modal-body">
+        <input id="resetPwUserId" type="hidden" />
+        <div class="field">
+          <label>대상 계정</label>
+          <input id="resetPwUserLabel" disabled />
+        </div>
+        <div class="field">
+          <label for="resetPwValue">새 비밀번호</label>
+          <input id="resetPwValue" type="password" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="resetPwCancelBtn" class="btn ghost" type="button">취소</button>
+        <button id="resetPwSaveBtn" class="btn primary" type="button">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="confirmTitle">확인</h3>
+      </div>
+      <div class="modal-body">
+        <p id="confirmMessage" class="muted"></p>
+      </div>
+      <div class="modal-actions">
+        <button id="confirmCancelBtn" class="btn ghost" type="button">취소</button>
+        <button id="confirmOkBtn" class="btn danger" type="button">실행</button>
       </div>
     </div>
   </div>
@@ -860,7 +946,8 @@
       users: [],
       sessions: [],
       settings: {},
-      pendingVerify: null
+      pendingVerify: null,
+      pendingConfirm: null
     };
 
     const $ = id => document.getElementById(id);
@@ -883,6 +970,34 @@
         .replaceAll("'", "&#039;");
     }
 
+    function hasRole(roles, role) {
+      return Array.isArray(roles) && roles.includes(role);
+    }
+
+    function selectedRoles(name) {
+      return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(input => input.value);
+    }
+
+    function setRoleChecks(name, roles) {
+      document.querySelectorAll(`input[name="${name}"]`).forEach(input => {
+        input.checked = roles.includes(input.value);
+      });
+    }
+
+    function roleBadges(roles) {
+      return (roles || []).map(role => `<span class="badge role">${escapeHtml(role)}</span>`).join(" ");
+    }
+
+    function activeBadge(active) {
+      return active ? `<span class="badge ok">활성</span>` : `<span class="badge off">비활성</span>`;
+    }
+
+    function resultBadge(result) {
+      return result === "SUCCESS"
+        ? `<span class="badge success">SUCCESS</span>`
+        : `<span class="badge fail">FAIL</span>`;
+    }
+
     function shortToken(token) {
       const text = String(token || "");
       if (text.length <= 12) return text;
@@ -895,11 +1010,7 @@
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action,
-          token,
-          ...payload
-        })
+        body: JSON.stringify({ action, token, ...payload })
       });
 
       const data = await res.json();
@@ -921,43 +1032,15 @@
       $("app").style.display = "block";
     }
 
-    function hasRole(roles, role) {
-      return Array.isArray(roles) && roles.includes(role);
-    }
-
-    function roleBadges(roles) {
-      return (roles || [])
-        .map(role => `<span class="badge role">${escapeHtml(role)}</span>`)
-        .join(" ");
-    }
-
-    function activeBadge(active) {
-      return active
-        ? `<span class="badge ok">활성</span>`
-        : `<span class="badge off">비활성</span>`;
-    }
-
-    function resultBadge(result) {
-      return result === "SUCCESS"
-        ? `<span class="badge success">SUCCESS</span>`
-        : `<span class="badge fail">FAIL</span>`;
-    }
-
-    function selectedRoles(name) {
-      return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`))
-        .map(input => input.value);
-    }
-
     async function requireVerification() {
       await api("sendVerificationCode", { purpose: "systemAction" });
-
       hideLoading();
 
       return new Promise((resolve, reject) => {
         state.pendingVerify = { resolve, reject };
         $("verifyCode").value = "";
         $("verifyError").style.display = "none";
-        $("verifyMessage").textContent = "zed.park@lns.maersk.com 또는 Settings에 등록된 시스템 인증 이메일로 인증코드를 발송했습니다.";
+        $("verifyMessage").textContent = "Settings에 등록된 시스템 인증 이메일로 인증코드를 발송했습니다.";
         $("verifyModal").style.display = "flex";
         setTimeout(() => $("verifyCode").focus(), 50);
       });
@@ -974,7 +1057,6 @@
 
       try {
         const code = await requireVerification();
-
         showLoading("작업 처리 중입니다...");
         await callback(code);
         await refreshAll();
@@ -985,6 +1067,22 @@
       } finally {
         hideLoading();
       }
+    }
+
+    function openConfirm(title, message, okText = "실행", danger = true) {
+      return new Promise((resolve, reject) => {
+        state.pendingConfirm = { resolve, reject };
+        $("confirmTitle").textContent = title;
+        $("confirmMessage").textContent = message;
+        $("confirmOkBtn").textContent = okText;
+        $("confirmOkBtn").className = danger ? "btn danger" : "btn primary";
+        $("confirmModal").style.display = "flex";
+      });
+    }
+
+    function closeConfirmModal() {
+      $("confirmModal").style.display = "none";
+      state.pendingConfirm = null;
     }
 
     async function loadSummary() {
@@ -1073,11 +1171,11 @@
       `).join("");
 
       document.querySelectorAll(".edit-user-btn").forEach(button => {
-        button.addEventListener("click", () => editUser(button.dataset.id));
+        button.addEventListener("click", () => openEditUser(button.dataset.id));
       });
 
       document.querySelectorAll(".reset-pw-btn").forEach(button => {
-        button.addEventListener("click", () => resetPassword(button.dataset.id));
+        button.addEventListener("click", () => openResetPassword(button.dataset.id));
       });
 
       document.querySelectorAll(".expire-user-btn").forEach(button => {
@@ -1150,7 +1248,7 @@
     }
 
     function renderSettings(settings) {
-      const keys = [
+      [
         "MAIL_ENABLED",
         "MAIL_TO",
         "DRIVE_FOLDER_ID",
@@ -1159,75 +1257,92 @@
         "SYSTEM_VERIFY_CODE_MINUTES",
         "LOGIN_MAX_FAILURES",
         "LOGIN_LOCK_MINUTES"
-      ];
-
-      keys.forEach(key => {
-        if ($(key)) {
-          $(key).value = settings[key] ?? "";
-        }
+      ].forEach(key => {
+        if ($(key)) $(key).value = settings[key] ?? "";
       });
     }
 
-    async function editUser(id) {
+    function openEditUser(id) {
       const user = state.users.find(item => item.id === id);
       if (!user) return;
 
-      const rolesText = prompt("Role 입력 예: worker 또는 admin,system", user.rolesText || "");
-      if (rolesText === null) return;
-
-      const activeText = prompt("활성 상태 입력: Y 또는 N", user.active ? "Y" : "N");
-      if (activeText === null) return;
-
-      await withVerification(async verificationCode => {
-        await api("updateUser", {
-          id,
-          roles: rolesText,
-          active: String(activeText).toUpperCase() === "N" ? "N" : "Y",
-          verificationCode
-        });
-      });
+      $("editUserId").value = user.id;
+      $("editUserLabel").value = user.id;
+      $("editUserActive").value = user.active ? "Y" : "N";
+      setRoleChecks("editRole", user.roles || []);
+      $("editUserModal").style.display = "flex";
     }
 
-    async function resetPassword(id) {
-      const password = prompt(`${id} 계정의 새 비밀번호를 입력하세요.`);
-      if (!password) return;
+    function closeEditUserModal() {
+      $("editUserModal").style.display = "none";
+    }
 
-      await withVerification(async verificationCode => {
-        await api("resetPassword", {
-          id,
-          password,
-          verificationCode
-        });
-      });
+    function openResetPassword(id) {
+      $("resetPwUserId").value = id;
+      $("resetPwUserLabel").value = id;
+      $("resetPwValue").value = "";
+      $("resetPwModal").style.display = "flex";
+      setTimeout(() => $("resetPwValue").focus(), 50);
+    }
+
+    function closeResetPwModal() {
+      $("resetPwModal").style.display = "none";
     }
 
     async function expireUserSessions(id) {
-      if (!confirm(`${id} 계정의 모든 세션을 만료할까요?`)) return;
+      try {
+        await openConfirm("세션 만료", `${id} 계정의 모든 세션을 만료할까요?`, "세션 만료", true);
 
-      await withVerification(async verificationCode => {
-        await api("expireUserSessions", {
-          id,
-          verificationCode
+        await withVerification(async verificationCode => {
+          await api("expireUserSessions", { id, verificationCode });
         });
-      });
+      } catch (err) {}
     }
 
     async function expireSession(sessionToken) {
-      if (!confirm("선택한 세션을 만료할까요?")) return;
+      try {
+        await openConfirm("세션 만료", "선택한 세션을 만료할까요?", "세션 만료", true);
 
-      await withVerification(async verificationCode => {
-        await api("expireSession", {
-          sessionToken,
-          verificationCode
+        await withVerification(async verificationCode => {
+          await api("expireSession", { sessionToken, verificationCode });
         });
-      });
+      } catch (err) {}
+    }
+
+    function csvCell(value) {
+      const text = String(value ?? "");
+      return `"${text.replaceAll('"', '""')}"`;
+    }
+
+    function downloadCsv(filename, rows) {
+      const csv = "\ufeff" + rows.map(row => row.map(csvCell).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function exportSheet(sheetName) {
+      showLoading(`${sheetName} CSV 생성 중입니다...`);
+
+      try {
+        const data = await api("exportSheetData", { sheetName });
+        const stamp = new Date().toISOString().slice(0, 10);
+        downloadCsv(`${sheetName}_${stamp}.csv`, data.rows || []);
+      } catch (err) {
+        alert(err.message || "Export 실패");
+      } finally {
+        hideLoading();
+      }
     }
 
     document.querySelectorAll(".tab").forEach(button => {
       button.addEventListener("click", () => {
         document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
         document.querySelectorAll(".panel").forEach(panel => panel.classList.remove("active"));
-
         button.classList.add("active");
         $(button.dataset.tab).classList.add("active");
       });
@@ -1329,24 +1444,59 @@
       });
     });
 
-    $("expireAllBtn").addEventListener("click", async () => {
-      if (!confirm("현재 본인 세션을 제외한 모든 세션을 만료할까요?")) return;
+    $("editUserCancelBtn").addEventListener("click", closeEditUserModal);
+
+    $("editUserSaveBtn").addEventListener("click", async () => {
+      const id = $("editUserId").value;
+      const roles = selectedRoles("editRole");
+
+      if (!roles.length) return alert("Role을 선택하세요.");
+
+      closeEditUserModal();
 
       await withVerification(async verificationCode => {
-        await api("expireAllSessions", { verificationCode });
-      });
-    });
-
-    $("clearLoginBtn").addEventListener("click", async () => {
-      const id = prompt("특정 ID만 초기화하려면 ID 입력, 전체 초기화는 빈칸으로 확인하세요.", "");
-      if (id === null) return;
-
-      await withVerification(async verificationCode => {
-        await api("clearLoginAttempts", {
+        await api("updateUser", {
           id,
+          roles,
+          active: $("editUserActive").value,
           verificationCode
         });
       });
+    });
+
+    $("resetPwCancelBtn").addEventListener("click", closeResetPwModal);
+
+    $("resetPwSaveBtn").addEventListener("click", async () => {
+      const id = $("resetPwUserId").value;
+      const password = $("resetPwValue").value;
+
+      if (!password) return alert("새 비밀번호를 입력하세요.");
+
+      closeResetPwModal();
+
+      await withVerification(async verificationCode => {
+        await api("resetPassword", { id, password, verificationCode });
+      });
+    });
+
+    $("expireAllBtn").addEventListener("click", async () => {
+      try {
+        await openConfirm("전체 세션 만료", "현재 본인 세션을 제외한 모든 세션을 만료할까요?", "전체 만료", true);
+
+        await withVerification(async verificationCode => {
+          await api("expireAllSessions", { verificationCode });
+        });
+      } catch (err) {}
+    });
+
+    $("clearLoginBtn").addEventListener("click", async () => {
+      try {
+        await openConfirm("로그인 실패 기록 초기화", "로그인 실패 기록을 전체 초기화할까요?", "초기화", true);
+
+        await withVerification(async verificationCode => {
+          await api("clearLoginAttempts", { id: "", verificationCode });
+        });
+      } catch (err) {}
     });
 
     $("settingsForm").addEventListener("submit", async event => {
@@ -1364,11 +1514,31 @@
       };
 
       await withVerification(async verificationCode => {
-        await api("updateSettings", {
-          settings,
-          verificationCode
-        });
+        await api("updateSettings", { settings, verificationCode });
       });
+    });
+
+    $("checkDriveBtn").addEventListener("click", async () => {
+      showLoading("Drive 폴더를 점검 중입니다...");
+
+      try {
+        const data = await api("checkDriveFolder", {
+          folderId: $("DRIVE_FOLDER_ID").value.trim()
+        });
+
+        alert(`Drive 폴더 정상\n\nName: ${data.folder.name}\nURL: ${data.folder.url}`);
+      } catch (err) {
+        alert(err.message || "Drive 점검 실패");
+      } finally {
+        hideLoading();
+      }
+    });
+
+    $("exportAuditBtn").addEventListener("click", () => exportSheet("AuditLogs"));
+    $("exportLoginBtn").addEventListener("click", () => exportSheet("LoginAttempts"));
+
+    document.querySelectorAll(".export-sheet-btn").forEach(button => {
+      button.addEventListener("click", () => exportSheet(button.dataset.sheet));
     });
 
     $("verifyCancelBtn").addEventListener("click", () => {
@@ -1400,6 +1570,22 @@
       if (event.key === "Enter") {
         $("verifySubmitBtn").click();
       }
+    });
+
+    $("confirmCancelBtn").addEventListener("click", () => {
+      if (state.pendingConfirm) {
+        state.pendingConfirm.reject(new Error("cancelled"));
+      }
+
+      closeConfirmModal();
+    });
+
+    $("confirmOkBtn").addEventListener("click", () => {
+      if (state.pendingConfirm) {
+        state.pendingConfirm.resolve(true);
+      }
+
+      closeConfirmModal();
     });
 
     async function boot() {
