@@ -961,8 +961,16 @@
         .replaceAll("'", "&#039;");
     }
 
-    function hasRole(roles, role) {
-      return Array.isArray(roles) && roles.includes(role);
+    function hasRole(data, role) {
+      const roles = Array.isArray(data?.user?.roles) ? data.user.roles : Array.isArray(data) ? data : [];
+      if (role === "system") return roles.includes("system");
+      if (roles.includes("system")) return true;
+      if (role === "worker" && roles.includes("admin")) return true;
+      return roles.includes(role);
+    }
+
+    function authUser(data) {
+      return data && data.user ? data.user : { id: data?.id || "", roles: data?.roles || [] };
     }
 
     function selectedRoles(name) {
@@ -1352,13 +1360,14 @@
           requiredRole: "system"
         });
 
-        if (!hasRole(data.roles || [], "system")) {
+        if (!hasRole(data, "system")) {
           throw new Error("System 권한이 없습니다.");
         }
 
         localStorage.setItem(TOKEN_KEY, data.token);
         state.user = data;
-        $("currentUser").textContent = `${data.id} / ${(data.roles || []).join(",")}`;
+        const user = authUser(data);
+        $("currentUser").textContent = `${user.id} / ${(user.roles || []).join(",")}`;
         showApp();
         await refreshAll();
       } catch (err) {
@@ -1592,12 +1601,13 @@
       try {
         const data = await api("validateToken");
 
-        if (!hasRole(data.roles || [], "system")) {
+        if (!hasRole(data, "system")) {
           throw new Error("System 권한이 없습니다.");
         }
 
         state.user = data;
-        $("currentUser").textContent = `${data.id} / ${(data.roles || []).join(",")}`;
+        const user = authUser(data);
+        $("currentUser").textContent = `${user.id} / ${(user.roles || []).join(",")}`;
         showApp();
         await refreshAll();
       } catch (err) {
