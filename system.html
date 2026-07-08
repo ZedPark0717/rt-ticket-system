@@ -991,8 +991,27 @@
       return active ? `<span class="badge ok">활성</span>` : `<span class="badge off">비활성</span>`;
     }
 
+    function normalizeLoginResult(value) {
+      const text = String(value || "").trim().toUpperCase();
+      return text === "Y" || text === "SUCCESS" || text === "TRUE" ? "SUCCESS" : "FAIL";
+    }
+
+    function normalizeLoginMessage(value) {
+      const text = String(value || "").trim();
+      const map = {
+        OK: "로그인 성공",
+        BAD_PASSWORD: "비밀번호 불일치",
+        NO_USER: "계정 없음",
+        EMPTY: "아이디/비밀번호 누락",
+        BLOCKED: "로그인 제한",
+        INACTIVE: "비활성 계정"
+      };
+      return map[text] || text || "-";
+    }
+
     function resultBadge(result) {
-      return result === "SUCCESS"
+      const normalized = normalizeLoginResult(result);
+      return normalized === "SUCCESS"
         ? `<span class="badge success">SUCCESS</span>`
         : `<span class="badge fail">FAIL</span>`;
     }
@@ -1237,14 +1256,21 @@
         return;
       }
 
-      tbody.innerHTML = attempts.map(item => `
+      tbody.innerHTML = attempts.map(item => {
+        const date = item.date || item.Date || "";
+        const userId = item.userId || item["User ID"] || "";
+        const result = item.result || item.Result || item.Success || item.success || "";
+        const message = item.message || item.Message || item.Reason || item.reason || "";
+
+        return `
         <tr>
-          <td>${escapeHtml(item.date)}</td>
-          <td>${escapeHtml(item.userId)}</td>
-          <td>${resultBadge(item.result)}</td>
-          <td>${escapeHtml(item.message)}</td>
+          <td>${escapeHtml(date)}</td>
+          <td>${escapeHtml(userId)}</td>
+          <td>${resultBadge(result)}</td>
+          <td>${escapeHtml(normalizeLoginMessage(message))}</td>
         </tr>
-      `).join("");
+      `;
+      }).join("");
     }
 
     function renderSettings(settings) {
