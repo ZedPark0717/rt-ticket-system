@@ -549,7 +549,8 @@
     }
 
     .success-qr canvas,
-    .success-qr img {
+    .success-qr img,
+    .success-qr svg {
       width: 156px;
       height: 156px;
     }
@@ -748,7 +749,7 @@
           <h2>접수 내역</h2>
 
           <div class="searchbar">
-            <input id="ticketSearch" placeholder="티켓번호 또는 날짜 검색 예: RT-20260707, 2026-07-07" />
+            <input id="ticketSearch" placeholder="티켓번호 또는 날짜 검색 예: RT-20260708, 2026-07-08" />
             <button id="searchBtn" class="primary">검색</button>
             <button id="allBtn" class="ghost">전체</button>
           </div>
@@ -813,7 +814,7 @@
     </div>
   </dialog>
 
-  <script src="assets/qrcode.min.js"></script>
+  <script src="./assets/qrcode.min.js?v=20260708"></script>
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
