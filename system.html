@@ -1315,8 +1315,13 @@
     }
 
     function downloadCsv(filename, rows) {
-      const csv = "\ufeff" + rows.map(row => row.map(csvCell).join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const csv = "\ufeff" + rows.map(row => row.map(csvCell).join(",")).join("
+");
+      downloadCsvText(filename, csv);
+    }
+
+    function downloadCsvText(filename, csv) {
+      const blob = new Blob(["\ufeff" + String(csv || "")], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
