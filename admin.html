@@ -389,7 +389,11 @@
     }
 
     function hasRole(data, role){
-      const roles = Array.isArray(data?.user?.roles) ? data.user.roles : [];
+      const roles = Array.isArray(data?.user?.roles) ? data.user.roles :
+        Array.isArray(data?.roles) ? data.roles :
+        typeof data?.roles === "string" ? data.roles.split(",").map(item => item.trim()).filter(Boolean) :
+        data?.role ? [data.role] : [];
+
       if(roles.includes("system")) return true;
       if(role === "worker" && roles.includes("admin")) return true;
       return roles.includes(role);
