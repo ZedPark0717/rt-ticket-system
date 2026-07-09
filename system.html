@@ -931,6 +931,8 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
     const TOKEN_KEY = "rt_system_auth_token";
+    const SYSTEM_HTML_VERSION = "SYSTEM-FIXED-AUTH-20260709-1329";
+    console.info(SYSTEM_HTML_VERSION);
 
     let state = {
       user: null,
@@ -1066,11 +1068,15 @@
     }
 
     function handleApiError(err, fallbackMessage = "요청 처리 중 오류가 발생했습니다.") {
-      if (isLoginRequiredError(err)) {
-        localStorage.removeItem(TOKEN_KEY);
-        showLogin();
-      }
       alert(err.message || fallbackMessage);
+    }
+
+    async function safeLoad(label, loader) {
+      try {
+        await loader();
+      } catch (err) {
+        console.warn(`${label} load failed`, err);
+      }
     }
 
     function showLogin() {
@@ -1190,9 +1196,12 @@
       showLoading("시스템 정보를 불러오는 중입니다...");
 
       try {
-        await loadSummary();
-        await loadUsers();
-        await loadSessions();
+        await safeLoad("summary", loadSummary);
+        await safeLoad("users", loadUsers);
+        await safeLoad("sessions", loadSessions);
+        await safeLoad("audit", loadAuditLogs);
+        await safeLoad("login attempts", loadLoginAttempts);
+        await safeLoad("settings", loadSettings);
       } finally {
         hideLoading();
       }
