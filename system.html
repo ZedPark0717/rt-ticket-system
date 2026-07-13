@@ -1,940 +1,1702 @@
-const CONFIG = {
-  SHEET_TICKETS: "Tickets",
-  SHEET_USERS: "Users",
-  SHEET_SESSIONS: "Sessions",
-  SHEET_AUDIT: "AuditLogs",
-  SHEET_LOGIN: "LoginAttempts",
-  SHEET_SETTINGS: "Settings",
-  SHEET_VERIFY: "VerificationCodes",
-  DRIVE_FOLDER_ID: "1ngS61tETk4j8x8RA8PLwGWoGpCoBOboe",
-  NOTIFY_EMAIL: "zed.park@lns.maersk.com",
-  VERIFY_EMAIL: "zed.park@lns.maersk.com",
-  WEB_APP_URL: "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec",
-  SESSION_HOURS: 12,
-  VERIFY_MINUTES: 10,
-  TIMEZONE: "Asia/Seoul"
-};
-
-const TICKET_HEADERS = ["Ticket ID", "Date", "Category", "Bulk Label", "SKU", "Creator ID", "Image", "Comment", "Status", "History"];
-const USER_HEADERS = ["ID", "Password Hash", "Salt", "Roles", "Active", "Created At", "Updated At", "Last Login"];
-const SESSION_HEADERS = ["Token", "User ID", "Roles", "Created At", "Expires At", "Active", "IP", "User Agent"];
-const AUDIT_HEADERS = ["Date", "User ID", "Action", "Target", "Result", "Message", "IP", "User Agent"];
-const LOGIN_HEADERS = ["Date", "User ID", "Success", "Reason", "IP", "User Agent"];
-const SETTING_HEADERS = ["Key", "Value", "Updated At"];
-const VERIFY_HEADERS = ["Code", "Purpose", "Target", "Expires At", "Used", "Created At"];
-const STATUSES = ["접수", "내용 확인 중", "고객사 확인 중", "완료"];
-
-function doPost(e) {
-  try {
-    setupInitialUsers();
-    const payload = parsePayload_(e);
-    const action = String(payload.action || "").trim();
-    if (!action) return json_({ ok: false, error: "action이 없습니다." });
-
-    const route = {
-      login: login_,
-      logout: logout_,
-      validateToken: validateToken_,
-      createTicket: createTicket_,
-      list: listTickets_,
-      getTicket: getTicket_,
-      updateStatus: updateStatus_,
-      deleteTicket: deleteTicket_,
-      restoreTicket: restoreTicket_,
-      remindTicket: remindTicket_,
-      analytics: analytics_,
-      exportSheetData: exportSheetData_,
-      systemSummary: systemSummary_,
-      listUsers: listUsers_,
-      createUser: createUser_,
-      updateUser: updateUser_,
-      resetPassword: resetPassword_,
-      listSessions: listSessions_,
-      expireSession: expireSession_,
-      expireUserSessions: expireUserSessions_,
-      expireAllSessions: expireAllSessions_,
-      listAuditLogs: listAuditLogs_,
-      listLoginAttempts: listLoginAttempts_,
-      clearLoginAttempts: clearLoginAttempts_,
-      getSettings: getSettings_,
-      updateSettings: updateSettings_,
-      checkDriveFolder: checkDriveFolder_,
-      requestVerificationCode: requestVerificationCode_,
-      verifyCode: verifyCode_,
-      uploadTicketPhoto: uploadTicketPhoto_
-    };
-
-    if (!route[action]) return json_({ ok: false, error: "지원하지 않는 action입니다: " + action });
-    return json_(route[action](payload, e));
-  } catch (err) {
-    return json_({ ok: false, error: err.message || String(err) });
-  }
-}
-
-function doGet(e) {
-  setupInitialUsers();
-  const p = e && e.parameter ? e.parameter : {};
-  if (p.page === "upload") return uploadPage_(p.ticketId || "");
-  return HtmlService.createHtmlOutput("RT Ticket System API is running.");
-}
-
-function setupInitialUsers() {
-  const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
-  try {
-    ensureSheet_(CONFIG.SHEET_TICKETS, TICKET_HEADERS);
-    ensureSheet_(CONFIG.SHEET_USERS, USER_HEADERS);
-    ensureSheet_(CONFIG.SHEET_SESSIONS, SESSION_HEADERS);
-    ensureSheet_(CONFIG.SHEET_AUDIT, AUDIT_HEADERS);
-    ensureSheet_(CONFIG.SHEET_LOGIN, LOGIN_HEADERS);
-    ensureSheet_(CONFIG.SHEET_SETTINGS, SETTING_HEADERS);
-    ensureSheet_(CONFIG.SHEET_VERIFY, VERIFY_HEADERS);
-
-    upsertSetting_("DRIVE_FOLDER_ID", CONFIG.DRIVE_FOLDER_ID);
-    upsertSetting_("NOTIFY_EMAIL", CONFIG.NOTIFY_EMAIL);
-    upsertSetting_("VERIFY_EMAIL", CONFIG.VERIFY_EMAIL);
-    upsertSetting_("WEB_APP_URL", CONFIG.WEB_APP_URL);
-
-    if (!findUser_("Staff")) createOrUpdateUserRecord_("Staff", "Staff1234", ["worker"], true);
-    if (!findUser_("zedpark")) createOrUpdateUserRecord_("zedpark", "Maersk2026!!", ["admin", "system"], true);
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-function parsePayload_(e) {
-  if (!e || !e.postData || !e.postData.contents) return {};
-  const text = e.postData.contents;
-  try {
-    return JSON.parse(text);
-  } catch (err) {
-    const obj = {};
-    text.split("&").forEach(pair => {
-      const parts = pair.split("=");
-      obj[decodeURIComponent(parts[0] || "")] = decodeURIComponent(parts.slice(1).join("=") || "");
-    });
-    return obj;
-  }
-}
-
-function json_(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
-}
-
-function ss_() {
-  return SpreadsheetApp.getActiveSpreadsheet();
-}
-
-function now_() {
-  return new Date();
-}
-
-function fmt_(date, pattern) {
-  return Utilities.formatDate(date || now_(), CONFIG.TIMEZONE, pattern || "yyyy-MM-dd HH:mm:ss");
-}
-
-function ensureSheet_(name, headers) {
-  const ss = ss_();
-  let sheet = ss.getSheetByName(name);
-  if (!sheet) sheet = ss.insertSheet(name);
-  if (sheet.getLastRow() === 0) {
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    return sheet;
-  }
-  const current = sheet.getRange(1, 1, 1, Math.max(headers.length, sheet.getLastColumn())).getValues()[0];
-  let changed = false;
-  headers.forEach((h, i) => {
-    if (current[i] !== h) {
-      current[i] = h;
-      changed = true;
-    }
-  });
-  if (changed) sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-  return sheet;
-}
-
-function rows_(sheetName, headers) {
-  const sheet = ensureSheet_(sheetName, headers);
-  const values = sheet.getDataRange().getValues();
-  if (values.length <= 1) return [];
-  return values.slice(1).map((row, idx) => {
-    const obj = { _row: idx + 2 };
-    headers.forEach((h, i) => obj[h] = row[i]);
-    return obj;
-  });
-}
-
-function append_(sheetName, headers, row) {
-  const sheet = ensureSheet_(sheetName, headers);
-  sheet.appendRow(headers.map(h => row[h] === undefined ? "" : row[h]));
-}
-
-function getMeta_(e) {
-  const h = e && e.headers ? e.headers : {};
-  return {
-    ip: h["X-Forwarded-For"] || h["x-forwarded-for"] || "",
-    ua: h["User-Agent"] || h["user-agent"] || ""
-  };
-}
-
-function hashPassword_(password, salt) {
-  const raw = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(salt) + "::" + String(password));
-  return raw.map(b => ("0" + (b & 255).toString(16)).slice(-2)).join("");
-}
-
-function newToken_() {
-  return Utilities.getUuid().replace(/-/g, "") + Utilities.getUuid().replace(/-/g, "");
-}
-
-function findUser_(id) {
-  const target = String(id || "").trim();
-  return rows_(CONFIG.SHEET_USERS, USER_HEADERS).find(u => String(u["ID"]).trim().toLowerCase() === target.toLowerCase());
-}
-
-function createOrUpdateUserRecord_(id, password, roles, active) {
-  const sheet = ensureSheet_(CONFIG.SHEET_USERS, USER_HEADERS);
-  const user = findUser_(id);
-  const salt = Utilities.getUuid();
-  const hash = hashPassword_(password, salt);
-  const row = {
-    "ID": id,
-    "Password Hash": hash,
-    "Salt": salt,
-    "Roles": roles.join(","),
-    "Active": active ? "Y" : "N",
-    "Created At": fmt_(),
-    "Updated At": fmt_(),
-    "Last Login": ""
-  };
-  if (user) {
-    sheet.getRange(user._row, 1, 1, USER_HEADERS.length).setValues([USER_HEADERS.map(h => {
-      if (h === "Created At") return user[h] || row[h];
-      if (h === "Last Login") return user[h] || "";
-      return row[h];
-    })]);
-  } else {
-    append_(CONFIG.SHEET_USERS, USER_HEADERS, row);
-  }
-}
-
-function roles_(user) {
-  return String(user && user["Roles"] || "").split(",").map(s => s.trim()).filter(Boolean);
-}
-
-function isActive_(user) {
-  return String(user && user["Active"] || "").toUpperCase() !== "N";
-}
-
-function readRequestToken_(payload) {
-  return String(payload.authToken || payload.sessionToken || payload.token || payload.accessToken || "").trim();
-}
-
-function requireSession_(payload, role) {
-  const token = readRequestToken_(payload);
-  if (!token) throw new Error("로그인이 필요합니다.");
-  const session = findSession_(token);
-  if (!session || String(session["Active"]).toUpperCase() !== "Y") throw new Error("로그인이 필요합니다.");
-  if (new Date(session["Expires At"]).getTime() < now_().getTime()) {
-    expireToken_(token);
-    throw new Error("로그인이 필요합니다.");
-  }
-  const user = findUser_(session["User ID"]);
-  if (!user || !isActive_(user)) throw new Error("로그인이 필요합니다.");
-  const userRoles = roles_(user);
-  if (role && !hasRole_(userRoles, role)) throw new Error("권한이 없습니다.");
-  return { token, user, roles: userRoles };
-}
-
-function hasRole_(roles, role) {
-  if (!role) return true;
-  if (roles.indexOf("system") >= 0) return true;
-  if (role === "worker" && roles.indexOf("admin") >= 0) return true;
-  return roles.indexOf(role) >= 0;
-}
-
-function findSession_(token) {
-  return rows_(CONFIG.SHEET_SESSIONS, SESSION_HEADERS).find(s => String(s["Token"]) === String(token));
-}
-
-function expireToken_(token) {
-  const sheet = ensureSheet_(CONFIG.SHEET_SESSIONS, SESSION_HEADERS);
-  const session = findSession_(token);
-  if (session) sheet.getRange(session._row, 6).setValue("N");
-}
-
-function logAudit_(userId, action, target, result, message, e) {
-  const meta = getMeta_(e);
-  append_(CONFIG.SHEET_AUDIT, AUDIT_HEADERS, {
-    "Date": fmt_(),
-    "User ID": userId || "",
-    "Action": action || "",
-    "Target": target || "",
-    "Result": result || "",
-    "Message": message || "",
-    "IP": meta.ip,
-    "User Agent": meta.ua
-  });
-}
-
-function logLogin_(userId, success, reason, e) {
-  const meta = getMeta_(e);
-  append_(CONFIG.SHEET_LOGIN, LOGIN_HEADERS, {
-    "Date": fmt_(),
-    "User ID": userId || "",
-    "Success": success ? "SUCCESS" : "FAIL",
-    "Reason": reason || "",
-    "IP": meta.ip,
-    "User Agent": meta.ua
-  });
-}
-
-function login_(payload, e) {
-  const id = String(payload.id || payload.userId || "").trim();
-  const password = String(payload.password || "");
-  const requiredRole = String(payload.requiredRole || "");
-  if (!id || !password) {
-    logLogin_(id, false, "EMPTY", e);
-    throw new Error("아이디/비밀번호를 입력해주세요.");
-  }
-  const user = findUser_(id);
-  if (!user) {
-    logLogin_(id, false, "NO_USER", e);
-    throw new Error("아이디 또는 비밀번호가 올바르지 않습니다.");
-  }
-  if (!isActive_(user)) {
-    logLogin_(id, false, "INACTIVE", e);
-    throw new Error("비활성 계정입니다.");
-  }
-  const hash = hashPassword_(password, user["Salt"]);
-  if (hash !== user["Password Hash"]) {
-    logLogin_(id, false, "BAD_PASSWORD", e);
-    throw new Error("아이디 또는 비밀번호가 올바르지 않습니다.");
-  }
-  const userRoles = roles_(user);
-  if (requiredRole && !hasRole_(userRoles, requiredRole)) {
-    logLogin_(id, false, "NO_ROLE", e);
-    throw new Error("권한이 없습니다.");
-  }
-
-  const token = newToken_();
-  const created = now_();
-  const expires = new Date(created.getTime() + CONFIG.SESSION_HOURS * 60 * 60 * 1000);
-  const meta = getMeta_(e);
-  append_(CONFIG.SHEET_SESSIONS, SESSION_HEADERS, {
-    "Token": token,
-    "User ID": user["ID"],
-    "Roles": userRoles.join(","),
-    "Created At": fmt_(created),
-    "Expires At": fmt_(expires),
-    "Active": "Y",
-    "IP": meta.ip,
-    "User Agent": meta.ua
-  });
-
-  ensureSheet_(CONFIG.SHEET_USERS, USER_HEADERS).getRange(user._row, 8).setValue(fmt_());
-  logLogin_(id, true, "OK", e);
-  logAudit_(id, "login", id, "SUCCESS", "로그인 성공", e);
-
-  return {
-    ok: true,
-    token: token,
-    authToken: token,
-    sessionToken: token,
-    user: { id: user["ID"], roles: userRoles }
-  };
-}
-
-function logout_(payload, e) {
-  const token = readRequestToken_(payload);
-  if (token) expireToken_(token);
-  return { ok: true };
-}
-
-function validateToken_(payload) {
-  const session = requireSession_(payload);
-  return { ok: true, token: session.token, user: { id: session.user["ID"], roles: session.roles } };
-}
-
-function nextTicketId_() {
-  const today = fmt_(now_(), "yyyyMMdd");
-  const prefix = "RT-" + today + "-";
-  const ids = rows_(CONFIG.SHEET_TICKETS, TICKET_HEADERS).map(r => String(r["Ticket ID"] || ""));
-  let max = 0;
-  ids.forEach(id => {
-    if (id.indexOf(prefix) === 0) {
-      const n = Number(id.slice(prefix.length));
-      if (!isNaN(n) && n > max) max = n;
-    }
-  });
-  return prefix + ("0" + (max + 1)).slice(-2);
-}
-
-function createTicket_(payload, e) {
-  requireSession_(payload, "worker");
-  const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
-  try {
-    const ticketId = nextTicketId_();
-    const date = fmt_();
-    const category = clean_(payload.category);
-    const bulk = cleanMulti_(payload.bulkLabel || payload.bulk);
-    const sku = cleanMulti_(payload.sku);
-    const creator = clean_(payload.creatorId || payload.creator || payload.workerId);
-    const comment = clean_(payload.comment);
-    const status = "접수";
-    const folderUrl = ensureTicketFolder_(ticketId).getUrl();
-    const history = "[" + date + "] [생성] " + creator + " / " + category;
-
-    append_(CONFIG.SHEET_TICKETS, TICKET_HEADERS, {
-      "Ticket ID": ticketId,
-      "Date": date,
-      "Category": category,
-      "Bulk Label": bulk,
-      "SKU": sku,
-      "Creator ID": creator,
-      "Image": folderUrl,
-      "Comment": comment,
-      "Status": status,
-      "History": history
-    });
-
-    sendTicketMail_({ ticketId, date, category, bulk, sku, creator, comment, status, folderUrl });
-    logAudit_(creator, "createTicket", ticketId, "SUCCESS", "티켓 생성", e);
-    return { ok: true, ticketId, uploadUrl: getTicketUploadUrl_(ticketId), folderUrl };
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-function clean_(value) {
-  return String(value === undefined || value === null ? "" : value).trim();
-}
-
-function cleanMulti_(value) {
-  return String(value === undefined || value === null ? "" : value)
-    .split(/\r?\n|,|\t/g)
-    .map(s => s.trim())
-    .filter(Boolean)
-    .join(";");
-}
-
-function ticketToObject_(row) {
-  return {
-    ticketId: row["Ticket ID"],
-    date: row["Date"],
-    category: row["Category"],
-    bulkLabel: row["Bulk Label"],
-    sku: row["SKU"],
-    creatorId: row["Creator ID"],
-    image: row["Image"],
-    imageFolder: row["Image"],
-    comment: row["Comment"],
-    status: row["Status"],
-    history: row["History"],
-    reminded: String(row["History"] || "").indexOf("[리마인드]") >= 0 ? "Y" : ""
-  };
-}
-
-function listTickets_(payload) {
-  requireSession_(payload, "worker");
-  let tickets = rows_(CONFIG.SHEET_TICKETS, TICKET_HEADERS).map(ticketToObject_);
-  const includeDeleted = String(payload.includeDeleted || "").toUpperCase() === "Y";
-  if (!includeDeleted) tickets = tickets.filter(t => t.status !== "삭제됨");
-
-  const q = clean_(payload.q || payload.search).toLowerCase();
-  const ticketId = clean_(payload.ticketId).toLowerCase();
-  const bulk = clean_(payload.bulkLabel).toLowerCase();
-  const creator = clean_(payload.creatorId).toLowerCase();
-  const status = clean_(payload.status);
-  const from = clean_(payload.fromDate || payload.dateFrom);
-  const to = clean_(payload.toDate || payload.dateTo);
-
-  if (q) tickets = tickets.filter(t => [t.ticketId, t.date, t.category, t.bulkLabel, t.sku, t.creatorId, t.comment].join(" ").toLowerCase().indexOf(q) >= 0);
-  if (ticketId) tickets = tickets.filter(t => String(t.ticketId || "").toLowerCase().indexOf(ticketId) >= 0 || String(t.date || "").replace(/-/g, "").indexOf(ticketId.replace(/-/g, "")) >= 0);
-  if (bulk) tickets = tickets.filter(t => String(t.bulkLabel || "").toLowerCase().indexOf(bulk) >= 0);
-  if (creator) tickets = tickets.filter(t => String(t.creatorId || "").toLowerCase().indexOf(creator) >= 0);
-  if (status && status !== "전체") tickets = tickets.filter(t => t.status === status);
-  if (from) tickets = tickets.filter(t => String(t.date || "").slice(0, 10) >= from);
-  if (to) tickets = tickets.filter(t => String(t.date || "").slice(0, 10) <= to);
-
-  tickets.sort((a, b) => String(b.date).localeCompare(String(a.date)));
-  return { ok: true, tickets };
-}
-
-function getTicket_(payload) {
-  requireSession_(payload, "worker");
-  const id = clean_(payload.ticketId);
-  const row = rows_(CONFIG.SHEET_TICKETS, TICKET_HEADERS).find(r => String(r["Ticket ID"]) === id);
-  if (!row) throw new Error("티켓을 찾을 수 없습니다.");
-  return { ok: true, ticket: ticketToObject_(row) };
-}
-
-function updateStatus_(payload, e) {
-  const session = requireSession_(payload, "admin");
-  const id = clean_(payload.ticketId);
-  const status = clean_(payload.status);
-  if (STATUSES.indexOf(status) < 0) throw new Error("올바르지 않은 상태입니다.");
-  const sheet = ensureSheet_(CONFIG.SHEET_TICKETS, TICKET_HEADERS);
-  const row = rows_(CONFIG.SHEET_TICKETS, TICKET_HEADERS).find(r => String(r["Ticket ID"]) === id);
-  if (!row) throw new Error("티켓을 찾을 수 없습니다.");
-  const old = row["Status"];
-  const history = String(row["History"] || "") + "\n[" + fmt_() + "] [상태변경] " + old + " -> " + status + " / " + session.user["ID"];
-  sheet.getRange(row._row, 9).setValue(status);
-  sheet.getRange(row._row, 10).setValue(history);
-  logAudit_(session.user["ID"], "updateStatus", id, "SUCCESS", old + " -> " + status, e);
-  return { ok: true };
-}
-
-function deleteTicket_(payload, e) {
-  const session = requireSession_(payload, "admin");
-  const id = clean_(payload.ticketId);
-  const sheet = ensureSheet_(CONFIG.SHEET_TICKETS, TICKET_HEADERS);
-  const row = rows_(CONFIG.SHEET_TICKETS, TICKET_HEADERS).find(r => String(r["Ticket ID"]) === id);
-  if (!row) throw new Error("티켓을 찾을 수 없습니다.");
-  const history = String(row["History"] || "") + "\n[" + fmt_() + "] [삭제] " + session.user["ID"];
-  sheet.getRange(row._row, 9).setValue("삭제됨");
-  sheet.getRange(row._row, 10).setValue(history);
-  logAudit_(session.user["ID"], "deleteTicket", id, "SUCCESS", "티켓 삭제", e);
-  return { ok: true };
-}
-
-function restoreTicket_(payload, e) {
-  const session = requireSession_(payload, "admin");
-  const id = clean_(payload.ticketId);
-  const sheet = ensureSheet_(CONFIG.SHEET_TICKETS, TICKET_HEADERS);
-  const row = rows_(CONFIG.SHEET_TICKETS, TICKET_HEADERS).find(r => String(r["Ticket ID"]) === id);
-  if (!row) throw new Error("티켓을 찾을 수 없습니다.");
-  const history = String(row["History"] || "") + "\n[" + fmt_() + "] [복구] " + session.user["ID"];
-  sheet.getRange(row._row, 9).setValue("접수");
-  sheet.getRange(row._row, 10).setValue(history);
-  logAudit_(session.user["ID"], "restoreTicket", id, "SUCCESS", "티켓 복구", e);
-  return { ok: true };
-}
-
-function remindTicket_(payload, e) {
-  const session = requireSession_(payload, "worker");
-  const id = clean_(payload.ticketId);
-  const sheet = ensureSheet_(CONFIG.SHEET_TICKETS, TICKET_HEADERS);
-  const row = rows_(CONFIG.SHEET_TICKETS, TICKET_HEADERS).find(r => String(r["Ticket ID"]) === id);
-  if (!row) throw new Error("티켓을 찾을 수 없습니다.");
-  const history = String(row["History"] || "") + "\n[" + fmt_() + "] [리마인드] " + session.user["ID"];
-  sheet.getRange(row._row, 10).setValue(history);
-  logAudit_(session.user["ID"], "remindTicket", id, "SUCCESS", "리마인드", e);
-  return { ok: true };
-}
-
-function analytics_(payload) {
-  requireSession_(payload, "admin");
-  const tickets = listTickets_({ ...payload, includeDeleted: "N" }).tickets;
-  const statusCounts = {};
-  const categoryCounts = {};
-  const bulkByCategory = {};
-  const uniqueBulks = {};
-  STATUSES.forEach(s => statusCounts[s] = 0);
-  tickets.forEach(t => {
-    statusCounts[t.status] = (statusCounts[t.status] || 0) + 1;
-    const cat = t.category || "미지정";
-    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-    String(t.bulkLabel || "").split(";").map(x => x.trim()).filter(Boolean).forEach(b => {
-      uniqueBulks[b] = true;
-      const key = cat + "||" + b;
-      bulkByCategory[key] = { category: cat, bulk: b };
-    });
-  });
-  const bulkVolumeByCategory = {};
-  Object.keys(bulkByCategory).forEach(key => {
-    const cat = bulkByCategory[key].category;
-    bulkVolumeByCategory[cat] = (bulkVolumeByCategory[cat] || 0) + 1;
-  });
-  return {
-    ok: true,
-    totalTickets: tickets.length,
-    totalBulkLabels: Object.keys(uniqueBulks).length,
-    statusCounts,
-    categoryCounts,
-    bulkVolumeByCategory
-  };
-}
-
-function exportSheetData_(payload) {
-  requireSession_(payload, "admin");
-  const tickets = listTickets_({ ...payload, includeDeleted: payload.includeDeleted || "N" }).tickets;
-  const headers = ["Ticket ID", "Date", "Category", "Bulk Label", "SKU", "Creator ID", "Status", "Reminded", "Image Folder", "Comment"];
-  const lines = [headers.map(csvCell_).join(",")];
-  tickets.forEach(t => {
-    lines.push([
-      t.ticketId,
-      t.date,
-      t.category,
-      textProtect_(t.bulkLabel),
-      textProtect_(t.sku),
-      t.creatorId,
-      t.status,
-      t.reminded,
-      t.imageFolder,
-      t.comment
-    ].map(csvCell_).join(","));
-  });
-  return { ok: true, filename: "rt-ticket-export-" + fmt_(now_(), "yyyyMMdd-HHmmss") + ".csv", csv: lines.join("\n") };
-}
-
-function textProtect_(value) {
-  const text = String(value || "");
-  return text ? '="' + text.replace(/"/g, '""') + '"' : "";
-}
-
-function csvCell_(value) {
-  return '"' + String(value === undefined || value === null ? "" : value).replace(/"/g, '""') + '"';
-}
-
-function systemSummary_(payload) {
-  requireSession_(payload, "system");
-  const users = rows_(CONFIG.SHEET_USERS, USER_HEADERS);
-  const sessions = rows_(CONFIG.SHEET_SESSIONS, SESSION_HEADERS);
-  const attempts = rows_(CONFIG.SHEET_LOGIN, LOGIN_HEADERS).slice(-20).reverse();
-  return {
-    ok: true,
-    usersCount: users.length,
-    activeUsersCount: users.filter(isActive_).length,
-    activeSessionsCount: sessions.filter(s => String(s["Active"]).toUpperCase() === "Y").length,
-    recentLoginAttempts: attempts,
-    settings: settingsObject_()
-  };
-}
-
-function listUsers_(payload) {
-  requireSession_(payload, "system");
-  const users = rows_(CONFIG.SHEET_USERS, USER_HEADERS).map(u => ({
-    id: u["ID"],
-    roles: roles_(u),
-    active: isActive_(u),
-    createdAt: u["Created At"],
-    updatedAt: u["Updated At"],
-    lastLogin: u["Last Login"]
-  }));
-  return { ok: true, users };
-}
-
-function createUser_(payload, e) {
-  const session = requireSession_(payload, "system");
-  requireVerify_(payload.verifyCode, "CREATE_USER", payload.id);
-  const id = clean_(payload.id);
-  const password = String(payload.password || "");
-  const roles = normalizeRoles_(payload.roles);
-  if (!id || !password || !roles.length) throw new Error("계정 정보를 확인해주세요.");
-  if (findUser_(id)) throw new Error("이미 존재하는 계정입니다.");
-  createOrUpdateUserRecord_(id, password, roles, payload.active !== false);
-  logAudit_(session.user["ID"], "createUser", id, "SUCCESS", "계정 생성", e);
-  return { ok: true };
-}
-
-function updateUser_(payload, e) {
-  const session = requireSession_(payload, "system");
-  requireVerify_(payload.verifyCode, "UPDATE_USER", payload.id);
-  const id = clean_(payload.id);
-  const user = findUser_(id);
-  if (!user) throw new Error("계정을 찾을 수 없습니다.");
-  const roles = normalizeRoles_(payload.roles);
-  const active = payload.active === true || String(payload.active).toUpperCase() === "Y";
-  const sheet = ensureSheet_(CONFIG.SHEET_USERS, USER_HEADERS);
-  sheet.getRange(user._row, 4).setValue(roles.join(","));
-  sheet.getRange(user._row, 5).setValue(active ? "Y" : "N");
-  sheet.getRange(user._row, 7).setValue(fmt_());
-  logAudit_(session.user["ID"], "updateUser", id, "SUCCESS", "계정 수정", e);
-  return { ok: true };
-}
-
-function resetPassword_(payload, e) {
-  const session = requireSession_(payload, "system");
-  requireVerify_(payload.verifyCode, "RESET_PASSWORD", payload.id);
-  const id = clean_(payload.id);
-  const password = String(payload.password || "");
-  const user = findUser_(id);
-  if (!user) throw new Error("계정을 찾을 수 없습니다.");
-  if (!password) throw new Error("새 비밀번호를 입력해주세요.");
-  const salt = Utilities.getUuid();
-  const hash = hashPassword_(password, salt);
-  const sheet = ensureSheet_(CONFIG.SHEET_USERS, USER_HEADERS);
-  sheet.getRange(user._row, 2).setValue(hash);
-  sheet.getRange(user._row, 3).setValue(salt);
-  sheet.getRange(user._row, 7).setValue(fmt_());
-  logAudit_(session.user["ID"], "resetPassword", id, "SUCCESS", "비밀번호 재설정", e);
-  return { ok: true };
-}
-
-function normalizeRoles_(value) {
-  if (Array.isArray(value)) return value.map(String).map(s => s.trim()).filter(Boolean);
-  return String(value || "").split(",").map(s => s.trim()).filter(Boolean);
-}
-
-function listSessions_(payload) {
-  requireSession_(payload, "system");
-  const sessions = rows_(CONFIG.SHEET_SESSIONS, SESSION_HEADERS).map(s => ({
-    token: s["Token"],
-    userId: s["User ID"],
-    roles: String(s["Roles"] || "").split(",").filter(Boolean),
-    createdAt: s["Created At"],
-    expiresAt: s["Expires At"],
-    active: String(s["Active"]).toUpperCase() === "Y",
-    ip: s["IP"],
-    userAgent: s["User Agent"]
-  })).reverse();
-  return { ok: true, sessions };
-}
-
-function expireSession_(payload, e) {
-  const session = requireSession_(payload, "system");
-  requireVerify_(payload.verifyCode, "EXPIRE_SESSION", String(payload.targetToken || payload.expireToken || payload.token || "").slice(0, 10));
-  const target = String(payload.targetToken || payload.expireToken || payload.token || "");
-  if (!target) throw new Error("만료할 세션이 없습니다.");
-  expireToken_(target);
-  logAudit_(session.user["ID"], "expireSession", target.slice(0, 10), "SUCCESS", "세션 만료", e);
-  return { ok: true };
-}
-
-function expireUserSessions_(payload, e) {
-  const session = requireSession_(payload, "system");
-  const userId = clean_(payload.userId);
-  requireVerify_(payload.verifyCode, "EXPIRE_USER_SESSIONS", userId);
-  const sheet = ensureSheet_(CONFIG.SHEET_SESSIONS, SESSION_HEADERS);
-  rows_(CONFIG.SHEET_SESSIONS, SESSION_HEADERS).forEach(s => {
-    if (String(s["User ID"]) === userId) sheet.getRange(s._row, 6).setValue("N");
-  });
-  logAudit_(session.user["ID"], "expireUserSessions", userId, "SUCCESS", "사용자 세션 만료", e);
-  return { ok: true };
-}
-
-function expireAllSessions_(payload, e) {
-  const session = requireSession_(payload, "system");
-  requireVerify_(payload.verifyCode, "EXPIRE_ALL_SESSIONS", "ALL");
-  const current = session.token;
-  const sheet = ensureSheet_(CONFIG.SHEET_SESSIONS, SESSION_HEADERS);
-  rows_(CONFIG.SHEET_SESSIONS, SESSION_HEADERS).forEach(s => {
-    if (String(s["Token"]) !== current) sheet.getRange(s._row, 6).setValue("N");
-  });
-  logAudit_(session.user["ID"], "expireAllSessions", "ALL", "SUCCESS", "전체 세션 만료", e);
-  return { ok: true };
-}
-
-function listAuditLogs_(payload) {
-  requireSession_(payload, "system");
-  const limit = Math.min(Number(payload.limit || 200), 1000);
-  const logs = rows_(CONFIG.SHEET_AUDIT, AUDIT_HEADERS).slice(-limit).reverse();
-  return { ok: true, logs };
-}
-
-function listLoginAttempts_(payload) {
-  requireSession_(payload, "system");
-  const limit = Math.min(Number(payload.limit || 200), 1000);
-  const logs = rows_(CONFIG.SHEET_LOGIN, LOGIN_HEADERS).slice(-limit).reverse();
-  return { ok: true, logs };
-}
-
-function clearLoginAttempts_(payload, e) {
-  const session = requireSession_(payload, "system");
-  requireVerify_(payload.verifyCode, "CLEAR_LOGIN_ATTEMPTS", "ALL");
-  const sheet = ensureSheet_(CONFIG.SHEET_LOGIN, LOGIN_HEADERS);
-  if (sheet.getLastRow() > 1) sheet.deleteRows(2, sheet.getLastRow() - 1);
-  logAudit_(session.user["ID"], "clearLoginAttempts", "ALL", "SUCCESS", "로그인 기록 초기화", e);
-  return { ok: true };
-}
-
-function getSettings_(payload) {
-  requireSession_(payload, "system");
-  return { ok: true, settings: settingsObject_() };
-}
-
-function updateSettings_(payload, e) {
-  const session = requireSession_(payload, "system");
-  requireVerify_(payload.verifyCode, "UPDATE_SETTINGS", "SETTINGS");
-  const settings = payload.settings || {};
-  Object.keys(settings).forEach(key => upsertSetting_(key, settings[key]));
-  logAudit_(session.user["ID"], "updateSettings", "SETTINGS", "SUCCESS", "설정 저장", e);
-  return { ok: true };
-}
-
-function settingsObject_() {
-  const obj = {};
-  rows_(CONFIG.SHEET_SETTINGS, SETTING_HEADERS).forEach(r => obj[r["Key"]] = r["Value"]);
-  return obj;
-}
-
-function getSetting_(key) {
-  const settings = settingsObject_();
-  return settings[key] || CONFIG[key] || "";
-}
-
-function upsertSetting_(key, value) {
-  const sheet = ensureSheet_(CONFIG.SHEET_SETTINGS, SETTING_HEADERS);
-  const row = rows_(CONFIG.SHEET_SETTINGS, SETTING_HEADERS).find(r => String(r["Key"]) === String(key));
-  if (row) {
-    sheet.getRange(row._row, 2).setValue(value);
-    sheet.getRange(row._row, 3).setValue(fmt_());
-  } else {
-    append_(CONFIG.SHEET_SETTINGS, SETTING_HEADERS, { "Key": key, "Value": value, "Updated At": fmt_() });
-  }
-}
-
-function checkDriveFolder_(payload) {
-  requireSession_(payload, "system");
-  const folder = DriveApp.getFolderById(getSetting_("DRIVE_FOLDER_ID") || CONFIG.DRIVE_FOLDER_ID);
-  return { ok: true, id: folder.getId(), name: folder.getName(), url: folder.getUrl() };
-}
-
-function requestVerificationCode_(payload) {
-  requireSession_(payload, "system");
-  const purpose = clean_(payload.purpose);
-  const target = clean_(payload.target);
-  if (!purpose) throw new Error("인증 목적이 없습니다.");
-  const code = String(Math.floor(100000 + Math.random() * 900000));
-  const expires = new Date(now_().getTime() + CONFIG.VERIFY_MINUTES * 60 * 1000);
-  append_(CONFIG.SHEET_VERIFY, VERIFY_HEADERS, {
-    "Code": code,
-    "Purpose": purpose,
-    "Target": target,
-    "Expires At": fmt_(expires),
-    "Used": "N",
-    "Created At": fmt_()
-  });
-  const to = getSetting_("VERIFY_EMAIL") || CONFIG.VERIFY_EMAIL;
-  MailApp.sendEmail({
-    to,
-    subject: "[RT Ticket System] 시스템 인증코드",
-    htmlBody: "<div style='font-family:Arial,sans-serif'><h2>시스템 인증코드</h2><p>Purpose: <b>" + escapeHtml_(purpose) + "</b></p><p>Target: <b>" + escapeHtml_(target) + "</b></p><p style='font-size:28px;font-weight:700'>" + code + "</p><p>유효시간 " + CONFIG.VERIFY_MINUTES + "분</p></div>"
-  });
-  return { ok: true };
-}
-
-function verifyCode_(payload) {
-  requireSession_(payload, "system");
-  requireVerify_(payload.code || payload.verifyCode, payload.purpose, payload.target);
-  return { ok: true };
-}
-
-function requireVerify_(code, purpose, target) {
-  const c = clean_(code);
-  if (!c) throw new Error("인증코드를 입력해주세요.");
-  const sheet = ensureSheet_(CONFIG.SHEET_VERIFY, VERIFY_HEADERS);
-  const matches = rows_(CONFIG.SHEET_VERIFY, VERIFY_HEADERS).filter(r =>
-    String(r["Code"]) === c &&
-    String(r["Purpose"]) === String(purpose || "") &&
-    String(r["Target"]) === String(target || "") &&
-    String(r["Used"]).toUpperCase() !== "Y"
-  );
-  if (!matches.length) throw new Error("인증코드가 올바르지 않습니다.");
-  const row = matches[matches.length - 1];
-  if (new Date(row["Expires At"]).getTime() < now_().getTime()) throw new Error("인증코드가 만료되었습니다.");
-  sheet.getRange(row._row, 5).setValue("Y");
-}
-
-function ensureTicketFolder_(ticketId) {
-  const root = DriveApp.getFolderById(getSetting_("DRIVE_FOLDER_ID") || CONFIG.DRIVE_FOLDER_ID);
-  const folders = root.getFoldersByName(ticketId);
-  if (folders.hasNext()) return folders.next();
-  return root.createFolder(ticketId);
-}
-
-function uploadTicketPhoto_(payload, e) {
-  const ticketId = clean_(payload.ticketId);
-  const fileName = clean_(payload.fileName || "photo.jpg");
-  const mimeType = clean_(payload.mimeType || "image/jpeg");
-  const data = String(payload.data || payload.base64 || "");
-  if (!ticketId || !data) throw new Error("업로드 정보가 부족합니다.");
-  const base64 = data.indexOf(",") >= 0 ? data.split(",").pop() : data;
-  const blob = Utilities.newBlob(Utilities.base64Decode(base64), mimeType, fileName);
-  const folder = ensureTicketFolder_(ticketId);
-  const file = folder.createFile(blob);
-  logAudit_("", "uploadTicketPhoto", ticketId, "SUCCESS", file.getName(), e);
-  return { ok: true, fileUrl: file.getUrl(), folderUrl: folder.getUrl() };
-}
-
-function getTicketUploadUrl_(ticketId) {
-  const base = String(getSetting_("WEB_APP_URL") || CONFIG.WEB_APP_URL).replace(/\/$/, "");
-  return base + "?page=upload&ticketId=" + encodeURIComponent(ticketId);
-}
-
-function uploadPage_(ticketId) {
-  const safeId = escapeHtml_(ticketId);
-  const html = `
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>RT Ticket Photo Upload</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RT Ticket System Admin</title>
+
   <style>
-    body{font-family:Arial,sans-serif;margin:0;background:#eef5fb;color:#06213f}
-    .wrap{max-width:520px;margin:0 auto;padding:28px}
-    .card{background:#fff;border:1px solid #d9e3ef;border-radius:14px;padding:24px;box-shadow:0 14px 34px rgba(5,30,55,.12)}
-    .top{background:#06213f;color:#fff;padding:18px 24px;font-weight:800}
-    button{width:100%;height:48px;border:0;border-radius:10px;background:#2f61df;color:#fff;font-weight:800;font-size:16px}
-    input{width:100%;padding:14px 0;margin:14px 0}
-    .msg{margin-top:14px;font-size:14px;color:#456}
+    :root {
+      --navy:#071d3a;
+      --navy-2:#0b2f5b;
+      --blue:#2f63e7;
+      --sky:#42b8d7;
+      --bg:#eef5fb;
+      --card:#ffffff;
+      --line:#d9e3ef;
+      --text:#071426;
+      --muted:#68768a;
+      --danger:#ef4444;
+      --ok:#10a66a;
+      --radius:8px;
+      --shadow:0 18px 45px rgba(7,29,58,.12);
+    }
+
+    * { box-sizing:border-box; }
+
+    body {
+      margin:0;
+      font-family:Arial,"Noto Sans KR",sans-serif;
+      background:linear-gradient(180deg,#edf6fb 0%,#f7f9fc 52%,#edf4fa 100%);
+      color:var(--text);
+    }
+
+    button,input,select,textarea { font:inherit; }
+    button { border:0; cursor:pointer; }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+    a { color:inherit; text-decoration:none; }
+
+    .login-page {
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:24px;
+    }
+
+    .login-card {
+      width:min(440px,100%);
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:28px;
+    }
+
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:14px;
+      margin-bottom:22px;
+    }
+
+    .brand img {
+      width:150px;
+      max-width:60%;
+      height:auto;
+      display:block;
+    }
+
+    .brand-fallback {
+      display:none;
+      font-size:28px;
+      font-weight:900;
+      letter-spacing:1px;
+      color:#000;
+    }
+
+    .login-title {
+      margin:0 0 6px;
+      font-size:24px;
+      color:var(--navy);
+    }
+
+    .login-sub {
+      margin:0 0 22px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.45;
+    }
+
+    .field {
+      display:grid;
+      gap:7px;
+      margin-bottom:14px;
+    }
+
+    .field label {
+      font-size:13px;
+      font-weight:800;
+      color:var(--navy);
+    }
+
+    input,select,textarea {
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:11px 12px;
+      background:#fff;
+      color:var(--text);
+      outline:none;
+    }
+
+    input:focus,select:focus,textarea:focus {
+      border-color:var(--sky);
+      box-shadow:0 0 0 3px rgba(66,184,215,.18);
+    }
+
+    .btn {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:40px;
+      padding:0 14px;
+      border-radius:var(--radius);
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    .primary { background:var(--blue); color:#fff; }
+    .navy { background:var(--navy); color:#fff; }
+    .sky { background:#eaf7fb; color:var(--navy); border:1px solid #bfe8f3; }
+    .ghost { background:#eaf0f8; color:var(--navy); }
+    .danger { background:#fee2e2; color:#b91c1c; }
+    .okbtn { background:#dcfce7; color:#047857; }
+
+    .error {
+      display:none;
+      margin-top:12px;
+      padding:11px 12px;
+      border-radius:var(--radius);
+      background:#fee2e2;
+      color:#991b1b;
+      font-size:13px;
+      font-weight:800;
+    }
+
+    .app {
+      display:none;
+      min-height:100vh;
+    }
+
+    .topbar {
+      position:sticky;
+      top:0;
+      z-index:20;
+      background:var(--navy);
+      color:#fff;
+      border-bottom:4px solid var(--sky);
+      box-shadow:0 10px 24px rgba(7,29,58,.16);
+    }
+
+    .topbar-inner {
+      max-width:1440px;
+      margin:0 auto;
+      padding:14px 22px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+
+    .top-title strong {
+      display:block;
+      font-size:18px;
+      letter-spacing:.2px;
+    }
+
+    .top-title span {
+      display:block;
+      margin-top:3px;
+      font-size:12px;
+      color:#c7d8ea;
+    }
+
+    .top-logo {
+      width:128px;
+      max-width:36vw;
+      background:#fff;
+      border-radius:4px;
+      padding:6px 8px;
+    }
+
+    .top-actions {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .user-pill {
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.2);
+      padding:9px 11px;
+      border-radius:var(--radius);
+      font-size:13px;
+      font-weight:800;
+    }
+
+    .wrap {
+      max-width:1440px;
+      margin:0 auto;
+      padding:22px;
+    }
+
+    .dashboard {
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
+      margin-bottom:16px;
+    }
+
+    .metric {
+      background:var(--card);
+      border:1px solid var(--line);
+      border-left:5px solid var(--sky);
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow:0 10px 28px rgba(7,29,58,.06);
+    }
+
+    .metric span {
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:800;
+      margin-bottom:8px;
+    }
+
+    .metric strong {
+      display:block;
+      font-size:28px;
+      color:var(--navy);
+    }
+
+    .tabs {
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin:0 0 16px;
+    }
+
+    .tab {
+      background:#dfeaf7;
+      color:var(--navy);
+      border-radius:var(--radius);
+      padding:11px 14px;
+      font-weight:900;
+    }
+
+    .tab.active {
+      background:var(--navy);
+      color:#fff;
+    }
+
+    .panel { display:none; }
+    .panel.active { display:block; }
+
+    .grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+      align-items:start;
+    }
+
+    .card {
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:0 14px 34px rgba(7,29,58,.08);
+      overflow:hidden;
+    }
+
+    .card-head {
+      padding:16px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .card-head h2 {
+      margin:0;
+      font-size:17px;
+      color:var(--navy);
+    }
+
+    .card-body { padding:16px; }
+
+    .form-grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .form-grid .full { grid-column:1 / -1; }
+
+    .role-buttons {
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .role-choice {
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:38px;
+      padding:0 13px;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      background:#f4f8fc;
+      color:var(--navy);
+      font-size:13px;
+      font-weight:900;
+      cursor:pointer;
+      user-select:none;
+    }
+
+    .role-choice input {
+      position:absolute;
+      opacity:0;
+      pointer-events:none;
+      width:1px;
+      height:1px;
+    }
+
+    .role-choice:has(input:checked) {
+      background:var(--navy);
+      border-color:var(--navy);
+      color:#fff;
+    }
+
+    .table-wrap {
+      width:100%;
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+    }
+
+    .log-scroll {
+      max-height:420px;
+      overflow-y:auto;
+    }
+
+    .log-scroll table {
+      margin:0;
+    }
+
+    .log-scroll thead th {
+      position:sticky;
+      top:0;
+      z-index:2;
+    }
+
+    table {
+      width:100%;
+      border-collapse:collapse;
+      min-width:780px;
+      background:#fff;
+    }
+
+    th,td {
+      padding:12px;
+      border-bottom:1px solid var(--line);
+      text-align:left;
+      font-size:13px;
+      vertical-align:middle;
+      white-space:nowrap;
+    }
+
+    th {
+      background:#f0f5fb;
+      color:var(--navy);
+      font-weight:900;
+    }
+
+    tr:last-child td { border-bottom:0; }
+
+    .badge {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:24px;
+      padding:0 9px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:900;
+    }
+
+    .badge.ok { background:#dcfce7; color:#047857; }
+    .badge.off { background:#fee2e2; color:#b91c1c; }
+    .badge.role { background:#eaf7fb; color:#075985; border:1px solid #bfe8f3; }
+    .badge.fail { background:#fee2e2; color:#b91c1c; }
+    .badge.success { background:#dcfce7; color:#047857; }
+
+    .row-actions {
+      display:flex;
+      gap:7px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .small-btn {
+      min-height:34px;
+      padding:0 10px;
+      border-radius:var(--radius);
+      font-size:12px;
+      font-weight:900;
+    }
+
+    .muted {
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .notice {
+      padding:13px 14px;
+      border-radius:var(--radius);
+      background:#eaf7fb;
+      border:1px solid #bfe8f3;
+      color:var(--navy);
+      font-size:13px;
+      font-weight:800;
+      line-height:1.5;
+      margin-bottom:14px;
+    }
+
+    .modal-backdrop {
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      background:rgba(7,20,38,.46);
+      z-index:80;
+    }
+
+    .modal {
+      width:min(520px,100%);
+      background:#fff;
+      border-radius:var(--radius);
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .modal-head {
+      padding:16px;
+      border-bottom:1px solid var(--line);
+      background:#f0f5fb;
+    }
+
+    .modal-head h3 {
+      margin:0;
+      font-size:17px;
+      color:var(--navy);
+    }
+
+    .modal-body { padding:16px; }
+
+    .modal-actions {
+      padding:0 16px 16px;
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .loading {
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(238,245,251,.72);
+      backdrop-filter:blur(2px);
+      z-index:100;
+    }
+
+    .loading-box {
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:18px 22px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-weight:900;
+      color:var(--navy);
+    }
+
+    .spinner {
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      border:3px solid #d9e3ef;
+      border-top-color:var(--sky);
+      animation:spin .8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform:rotate(360deg); }
+    }
+
+    @media (max-width:980px) {
+      .dashboard { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .grid { grid-template-columns:1fr; }
+      .topbar-inner { align-items:flex-start; }
+    }
+
+    @media (max-width:640px) {
+      .wrap { padding:14px; }
+      .topbar-inner { padding:13px 14px; flex-direction:column; }
+      .top-actions { width:100%; justify-content:flex-start; }
+      .dashboard { grid-template-columns:1fr; }
+      .form-grid { grid-template-columns:1fr; }
+      .login-card { padding:22px; }
+      .card-head { align-items:flex-start; }
+    }
   </style>
 </head>
+
 <body>
-  <div class="top">RT Ticket Photo Upload</div>
-  <div class="wrap">
-    <div class="card">
-      <h2>${safeId}</h2>
-      <input id="file" type="file" accept="image/*" multiple>
-      <button onclick="upload()">사진 업로드</button>
-      <div id="msg" class="msg"></div>
+  <section id="loginPage" class="login-page">
+    <div class="login-card">
+      <div class="brand">
+        <img src="assets/maersk-logo.png" alt="MAERSK"
+          onerror="this.style.display='none';document.getElementById('loginBrandFallback').style.display='block';" />
+        <div id="loginBrandFallback" class="brand-fallback">MAERSK</div>
+      </div>
+
+      <h1 class="login-title">System Admin</h1>
+      <p class="login-sub">시스템 관리자 계정으로 로그인하세요. 계정/보안/설정 관리는 system 권한만 접근 가능합니다.</p>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="loginId">ID</label>
+          <input id="loginId" autocomplete="username" required />
+        </div>
+
+        <div class="field">
+          <label for="loginPw">Password</label>
+          <input id="loginPw" type="password" autocomplete="current-password" required />
+        </div>
+
+        <button class="btn primary" type="submit">로그인</button>
+        <div id="loginError" class="error"></div>
+      </form>
+    </div>
+  </section>
+
+  <main id="app" class="app">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="top-title">
+          <strong>RT Ticket System Admin</strong>
+          <span>계정, 세션, 보안 로그, 시스템 설정 관리</span>
+        </div>
+
+        <div class="top-actions">
+          <span id="currentUser" class="user-pill">-</span>
+          <button id="refreshBtn" class="btn sky" type="button">새로고침</button>
+          <button id="logoutBtn" class="btn ghost" type="button">Logout</button>
+          <img class="top-logo" src="assets/maersk-logo.png" alt="MAERSK" onerror="this.style.display='none';" />
+        </div>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <section class="dashboard">
+        <div class="metric"><span>전체 계정</span><strong id="metricUsers">0</strong></div>
+        <div class="metric"><span>활성 계정</span><strong id="metricActiveUsers">0</strong></div>
+        <div class="metric"><span>활성 세션</span><strong id="metricSessions">0</strong></div>
+        <div class="metric"><span>최근 로그인 기록</span><strong id="metricAttempts">0</strong></div>
+      </section>
+
+      <nav class="tabs">
+        <button class="tab active" type="button" data-tab="usersPanel">계정 관리</button>
+        <button class="tab" type="button" data-tab="sessionsPanel">세션 관리</button>
+        <button class="tab" type="button" data-tab="logsPanel">감사 로그</button>
+        <button class="tab" type="button" data-tab="settingsPanel">시스템 설정</button>
+        <button class="tab" type="button" data-tab="exportPanel">Export</button>
+      </nav>
+
+      <section id="usersPanel" class="panel active">
+        <div class="grid">
+          <article class="card">
+            <div class="card-head"><h2>계정 생성</h2></div>
+            <div class="card-body">
+              <div class="notice">계정 생성은 이메일 인증코드 확인 후 처리됩니다.</div>
+
+              <form id="createUserForm" class="form-grid">
+                <div class="field">
+                  <label for="newUserId">User ID</label>
+                  <input id="newUserId" placeholder="예: Staff02" />
+                </div>
+
+                <div class="field">
+                  <label for="newUserPw">Password</label>
+                  <input id="newUserPw" type="password" placeholder="임시 비밀번호" />
+                </div>
+
+                <div class="field full">
+                  <label>Roles</label>
+                  <div class="role-buttons">
+                    <label class="role-choice"><input type="checkbox" name="newRole" value="worker" />worker</label>
+                    <label class="role-choice"><input type="checkbox" name="newRole" value="admin" />admin</label>
+                    <label class="role-choice"><input type="checkbox" name="newRole" value="system" />system</label>
+                  </div>
+                </div>
+
+                <div class="field full">
+                  <label for="newUserActive">Active</label>
+                  <select id="newUserActive">
+                    <option value="Y">활성</option>
+                    <option value="N">비활성</option>
+                  </select>
+                </div>
+
+                <div class="full row-actions">
+                  <button class="btn primary" type="submit">계정 생성</button>
+                </div>
+              </form>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h2>계정 목록</h2>
+              <button id="reloadUsersBtn" class="btn sky" type="button">목록 갱신</button>
+            </div>
+            <div class="card-body">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Roles</th>
+                      <th>상태</th>
+                      <th>Last Login</th>
+                      <th>작업</th>
+                    </tr>
+                  </thead>
+                  <tbody id="usersTbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="sessionsPanel" class="panel">
+        <article class="card">
+          <div class="card-head">
+            <h2>세션 관리</h2>
+            <div class="row-actions">
+              <button id="reloadSessionsBtn" class="btn sky" type="button">목록 갱신</button>
+              <button id="expireAllBtn" class="btn danger" type="button">전체 세션 만료</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="notice">전체 세션 만료는 현재 로그인한 본인 세션은 유지하고 다른 세션만 만료합니다.</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>User ID</th>
+                    <th>Roles</th>
+                    <th>Created</th>
+                    <th>Expires</th>
+                    <th>Active</th>
+                    <th>Last Seen</th>
+                    <th>작업</th>
+                  </tr>
+                </thead>
+                <tbody id="sessionsTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section id="logsPanel" class="panel">
+        <div class="grid">
+          <article class="card">
+            <div class="card-head">
+              <h2>감사 로그</h2>
+              <div class="row-actions">
+                <button id="reloadAuditBtn" class="btn sky" type="button">갱신</button>
+                <button id="exportAuditBtn" class="btn ghost" type="button">CSV</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="table-wrap log-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>User</th>
+                      <th>Action</th>
+                      <th>Target</th>
+                      <th>Detail</th>
+                    </tr>
+                  </thead>
+                  <tbody id="auditTbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h2>로그인 기록</h2>
+              <div class="row-actions">
+                <button id="reloadLoginBtn" class="btn sky" type="button">갱신</button>
+                <button id="exportLoginBtn" class="btn ghost" type="button">CSV</button>
+                <button id="clearLoginBtn" class="btn danger" type="button">실패 기록 초기화</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="table-wrap log-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>User</th>
+                      <th>Result</th>
+                      <th>Message</th>
+                    </tr>
+                  </thead>
+                  <tbody id="loginTbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="settingsPanel" class="panel">
+        <article class="card">
+          <div class="card-head">
+            <h2>시스템 설정</h2>
+            <div class="row-actions">
+              <button id="reloadSettingsBtn" class="btn sky" type="button">설정 갱신</button>
+              <button id="checkDriveBtn" class="btn ghost" type="button">Drive 점검</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="notice">설정 변경은 이메일 인증코드 확인 후 저장됩니다.</div>
+
+            <form id="settingsForm" class="form-grid">
+              <div class="field">
+                <label for="MAIL_ENABLED">메일 알림</label>
+                <select id="MAIL_ENABLED">
+                  <option value="Y">사용</option>
+                  <option value="N">미사용</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="MAIL_TO">티켓 알림 수신자</label>
+                <input id="MAIL_TO" />
+              </div>
+
+              <div class="field full">
+                <label for="DRIVE_FOLDER_ID">Drive Parent Folder ID</label>
+                <input id="DRIVE_FOLDER_ID" />
+              </div>
+
+              <div class="field">
+                <label for="SESSION_HOURS">세션 만료 시간</label>
+                <input id="SESSION_HOURS" type="number" min="1" max="24" />
+              </div>
+
+              <div class="field">
+                <label for="SYSTEM_VERIFY_EMAIL">시스템 인증 이메일</label>
+                <input id="SYSTEM_VERIFY_EMAIL" />
+              </div>
+
+              <div class="field">
+                <label for="SYSTEM_VERIFY_CODE_MINUTES">인증코드 유효시간</label>
+                <input id="SYSTEM_VERIFY_CODE_MINUTES" type="number" min="1" max="30" />
+              </div>
+
+              <div class="field">
+                <label for="LOGIN_MAX_FAILURES">로그인 실패 제한</label>
+                <input id="LOGIN_MAX_FAILURES" type="number" min="1" max="20" />
+              </div>
+
+              <div class="field">
+                <label for="LOGIN_LOCK_MINUTES">로그인 잠금 시간</label>
+                <input id="LOGIN_LOCK_MINUTES" type="number" min="1" max="120" />
+              </div>
+
+              <div class="full row-actions">
+                <button class="btn primary" type="submit">설정 저장</button>
+              </div>
+            </form>
+          </div>
+        </article>
+      </section>
+
+      <section id="exportPanel" class="panel">
+        <article class="card">
+          <div class="card-head"><h2>System Export</h2></div>
+          <div class="card-body">
+            <div class="notice">보안/감사용 시트 데이터를 CSV로 다운로드합니다.</div>
+            <div class="row-actions">
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="Tickets">Tickets</button>
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="TicketItems">TicketItems</button>
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="Users">Users</button>
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="Sessions">Sessions</button>
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="AuditLogs">AuditLogs</button>
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="LoginAttempts">LoginAttempts</button>
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="Settings">Settings</button>
+              <button class="btn sky export-sheet-btn" type="button" data-sheet="VerificationCodes">VerificationCodes</button>
+            </div>
+          </div>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <div id="verifyModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-head"><h3>이메일 인증코드 확인</h3></div>
+      <div class="modal-body">
+        <p id="verifyMessage" class="muted">인증코드를 메일로 발송했습니다.</p>
+        <div class="field">
+          <label for="verifyCode">인증코드 6자리</label>
+          <input id="verifyCode" inputmode="numeric" maxlength="6" placeholder="000000" />
+        </div>
+        <div id="verifyError" class="error"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="verifyCancelBtn" class="btn ghost" type="button">취소</button>
+        <button id="verifySubmitBtn" class="btn primary" type="button">확인</button>
+      </div>
     </div>
   </div>
+
+  <div id="editUserModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-head"><h3>계정 수정</h3></div>
+      <div class="modal-body">
+        <input id="editUserId" type="hidden" />
+        <div class="field">
+          <label>대상 계정</label>
+          <input id="editUserLabel" disabled />
+        </div>
+        <div class="field">
+          <label>Roles</label>
+          <div class="role-buttons">
+            <label class="role-choice"><input type="checkbox" name="editRole" value="worker" />worker</label>
+            <label class="role-choice"><input type="checkbox" name="editRole" value="admin" />admin</label>
+            <label class="role-choice"><input type="checkbox" name="editRole" value="system" />system</label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="editUserActive">Active</label>
+          <select id="editUserActive">
+            <option value="Y">활성</option>
+            <option value="N">비활성</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="editUserCancelBtn" class="btn ghost" type="button">취소</button>
+        <button id="editUserSaveBtn" class="btn primary" type="button">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resetPwModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-head"><h3>비밀번호 재설정</h3></div>
+      <div class="modal-body">
+        <input id="resetPwUserId" type="hidden" />
+        <div class="field">
+          <label>대상 계정</label>
+          <input id="resetPwUserLabel" disabled />
+        </div>
+        <div class="field">
+          <label for="resetPwValue">새 비밀번호</label>
+          <input id="resetPwValue" type="password" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="resetPwCancelBtn" class="btn ghost" type="button">취소</button>
+        <button id="resetPwSaveBtn" class="btn primary" type="button">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-head"><h3 id="confirmTitle">확인</h3></div>
+      <div class="modal-body">
+        <p id="confirmMessage" class="muted"></p>
+      </div>
+      <div class="modal-actions">
+        <button id="confirmCancelBtn" class="btn ghost" type="button">취소</button>
+        <button id="confirmOkBtn" class="btn danger" type="button">실행</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading" class="loading">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <span id="loadingText">처리 중입니다...</span>
+    </div>
+  </div>
+
   <script>
-    const API_URL = "${CONFIG.WEB_APP_URL}";
-    const ticketId = "${safeId}";
-    async function upload(){
-      const files = Array.from(document.getElementById("file").files || []);
-      if(!files.length){ document.getElementById("msg").textContent = "파일을 선택해주세요."; return; }
-      document.getElementById("msg").textContent = "업로드 중입니다...";
-      for(const file of files){
-        const data = await new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.onerror=reject; r.readAsDataURL(file); });
-        const res = await fetch(API_URL,{ method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body:JSON.stringify({ action:"uploadTicketPhoto", ticketId, fileName:file.name, mimeType:file.type, data })});
-        const json = await res.json();
-        if(!json.ok) throw new Error(json.error || "업로드 실패");
-      }
-      document.getElementById("msg").textContent = "업로드 완료되었습니다.";
+    const API_URL = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
+    const TOKEN_KEY = "rt_system_auth_token";
+    const SYSTEM_HTML_VERSION = "SYSTEM-AUTH-FIXED-20260713";
+    console.info(SYSTEM_HTML_VERSION);
+
+    let state = {
+      user: null,
+      users: [],
+      sessions: [],
+      settings: {},
+      pendingVerify: null,
+      pendingConfirm: null
+    };
+
+    const $ = id => document.getElementById(id);
+
+    function showLoading(text = "처리 중입니다...") {
+      $("loadingText").textContent = text;
+      $("loading").style.display = "flex";
     }
+
+    function hideLoading() {
+      $("loading").style.display = "none";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function hasRole(data, role) {
+      const roles = Array.isArray(data?.user?.roles) ? data.user.roles : Array.isArray(data) ? data : [];
+      if (role === "system") return roles.includes("system");
+      if (roles.includes("system")) return true;
+      if (role === "worker" && roles.includes("admin")) return true;
+      return roles.includes(role);
+    }
+
+    function authUser(data) {
+      return data && data.user ? data.user : { id: data?.id || "", roles: data?.roles || [] };
+    }
+
+    function extractToken(data) {
+      return data?.token || data?.authToken || data?.sessionToken || data?.session?.token || data?.user?.token || "";
+    }
+
+    function getStoredToken() {
+      const token = localStorage.getItem(TOKEN_KEY) || "";
+      if (!token || token === "undefined" || token === "null") {
+        localStorage.removeItem(TOKEN_KEY);
+        return "";
+      }
+      return token;
+    }
+
+    function isLoginRequiredError(err) {
+      const message = String(err?.message || err || "");
+      return message.includes("로그인이 필요") || message.toLowerCase().includes("login required");
+    }
+
+    function selectedRoles(name) {
+      return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(input => input.value);
+    }
+
+    function setRoleChecks(name, roles) {
+      document.querySelectorAll(`input[name="${name}"]`).forEach(input => {
+        input.checked = roles.includes(input.value);
+      });
+    }
+
+        function roleBadges(roles) {
+      return (roles || []).map(role => `<span class="badge role">${escapeHtml(role)}</span>`).join(" ");
+    }
+
+    function activeBadge(active) {
+      return active ? `<span class="badge ok">\uD65C\uC131</span>` : `<span class="badge off">\uBE44\uD65C\uC131</span>`;
+    }
+
+    function normalizeLoginResult(value) {
+      const text = String(value || "").trim().toUpperCase();
+      return text === "Y" || text === "SUCCESS" || text === "TRUE" ? "SUCCESS" : "FAIL";
+    }
+
+    function normalizeLoginMessage(value) {
+      const text = String(value || "").trim();
+      const map = {
+        OK: "\uB85C\uADF8\uC778 \uC131\uACF5",
+        BAD_PASSWORD: "\uBE44\uBC00\uBC88\uD638 \uBD88\uC77C\uCE58",
+        NO_USER: "\uACC4\uC815 \uC5C6\uC74C",
+        EMPTY: "\uC544\uC774\uB514/\uBE44\uBC00\uBC88\uD638 \uB204\uB77D",
+        BLOCKED: "\uB85C\uADF8\uC778 \uC81C\uD55C",
+        INACTIVE: "\uBE44\uD65C\uC131 \uACC4\uC815"
+      };
+      return map[text] || text || "-";
+    }
+
+    function resultBadge(result) {
+      const normalized = normalizeLoginResult(result);
+      return normalized === "SUCCESS"
+        ? `<span class="badge success">SUCCESS</span>`
+        : `<span class="badge fail">FAIL</span>`;
+    }
+
+    function shortToken(token) {
+      const text = String(token || "");
+      if (text.length <= 12) return text;
+      return text.slice(0, 8) + "...";
+    }
+
+    async function api(action, payload = {}) {
+      const token = getStoredToken();
+      const requestBody = {
+        action,
+        token,
+        authToken: token,
+        sessionToken: token,
+        ...payload
+      };
+
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(requestBody)
+      });
+
+      const data = await res.json();
+
+      if (!data.ok) {
+        throw new Error(data.error || "요청 실패");
+      }
+
+      return data;
+    }
+
+    function handleApiError(err, fallbackMessage = "요청 처리 중 오류가 발생했습니다.") {
+      alert(err.message || fallbackMessage);
+    }
+
+    async function safeLoad(label, loader) {
+      try {
+        await loader();
+      } catch (err) {
+        console.warn(`${label} load failed`, err);
+      }
+    }
+
+    function showLogin() {
+      $("loginPage").style.display = "grid";
+      $("app").style.display = "none";
+    }
+
+    function showApp() {
+      $("loginPage").style.display = "none";
+      $("app").style.display = "block";
+    }
+
+    async function requireVerification(purpose, target) {
+      await api("requestVerificationCode", { purpose, target });
+      hideLoading();
+
+      return new Promise((resolve, reject) => {
+        state.pendingVerify = { resolve, reject };
+        $("verifyCode").value = "";
+        $("verifyError").style.display = "none";
+        $("verifyMessage").textContent = "Settings에 등록된 시스템 인증 이메일로 인증코드를 발송했습니다.";
+        $("verifyModal").style.display = "flex";
+        setTimeout(() => $("verifyCode").focus(), 50);
+      });
+    }
+
+    function closeVerifyModal() {
+      $("verifyModal").style.display = "none";
+      $("verifyError").style.display = "none";
+      state.pendingVerify = null;
+    }
+
+    async function withVerification(purpose, target, callback) {
+      showLoading("인증코드 발송 중입니다...");
+
+      try {
+        const code = await requireVerification(purpose, target);
+        showLoading("작업 처리 중입니다...");
+        await callback(code);
+        await refreshAll();
+      } catch (err) {
+        if (err && err.message !== "cancelled") {
+          alert(err.message || "작업 실패");
+        }
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function openConfirm(title, message, okText = "실행", danger = true) {
+      return new Promise((resolve, reject) => {
+        state.pendingConfirm = { resolve, reject };
+        $("confirmTitle").textContent = title;
+        $("confirmMessage").textContent = message;
+        $("confirmOkBtn").textContent = okText;
+        $("confirmOkBtn").className = danger ? "btn danger" : "btn primary";
+        $("confirmModal").style.display = "flex";
+      });
+    }
+
+    function closeConfirmModal() {
+      $("confirmModal").style.display = "none";
+      state.pendingConfirm = null;
+    }
+
+    async function loadSummary() {
+      const data = await api("systemSummary");
+
+      $("metricUsers").textContent = data.usersCount || 0;
+      $("metricActiveUsers").textContent = data.activeUsersCount || 0;
+      $("metricSessions").textContent = data.activeSessionsCount || 0;
+      $("metricAttempts").textContent = (data.recentLoginAttempts || []).length;
+
+      if (data.settings) {
+        state.settings = data.settings;
+        renderSettings(data.settings);
+      }
+
+      renderAuditLogs(data.recentAuditLogs || []);
+      renderLoginAttempts(data.recentLoginAttempts || []);
+    }
+
+    async function loadUsers() {
+      const data = await api("listUsers");
+      state.users = data.users || [];
+      renderUsers();
+      $("metricUsers").textContent = state.users.length;
+      $("metricActiveUsers").textContent = state.users.filter(user => user.active).length;
+    }
+
+    async function loadSessions() {
+      const data = await api("listSessions");
+      state.sessions = data.sessions || [];
+      renderSessions();
+      $("metricSessions").textContent = state.sessions.filter(session => session.active).length;
+    }
+
+    async function loadAuditLogs() {
+      const data = await api("listAuditLogs", { limit: 200 });
+      renderAuditLogs(data.logs || []);
+    }
+
+    async function loadLoginAttempts() {
+      const data = await api("listLoginAttempts", { limit: 200 });
+      const attempts = data.logs || data.attempts || [];
+      renderLoginAttempts(attempts);
+      $("metricAttempts").textContent = attempts.length;
+    }
+
+    async function loadSettings() {
+      const data = await api("getSettings");
+      state.settings = data.settings || {};
+      renderSettings(state.settings);
+    }
+
+    async function refreshAll() {
+      showLoading("시스템 정보를 불러오는 중입니다...");
+
+      try {
+        await safeLoad("summary", loadSummary);
+        await safeLoad("users", loadUsers);
+        await safeLoad("sessions", loadSessions);
+        await safeLoad("audit", loadAuditLogs);
+        await safeLoad("login attempts", loadLoginAttempts);
+        await safeLoad("settings", loadSettings);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function renderUsers() {
+      const tbody = $("usersTbody");
+
+      if (!state.users.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="muted">계정이 없습니다.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = state.users.map(user => `
+        <tr>
+          <td><strong>${escapeHtml(user.id)}</strong></td>
+          <td>${roleBadges(user.roles)}</td>
+          <td>${activeBadge(user.active)}</td>
+          <td>${escapeHtml(user.lastLoginAt || "-")}</td>
+          <td>
+            <div class="row-actions">
+              <button class="small-btn sky edit-user-btn" type="button" data-id="${escapeHtml(user.id)}">수정</button>
+              <button class="small-btn ghost reset-pw-btn" type="button" data-id="${escapeHtml(user.id)}">비번 재설정</button>
+              <button class="small-btn danger expire-user-btn" type="button" data-id="${escapeHtml(user.id)}">세션 만료</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+
+      document.querySelectorAll(".edit-user-btn").forEach(button => {
+        button.addEventListener("click", () => openEditUser(button.dataset.id));
+      });
+
+      document.querySelectorAll(".reset-pw-btn").forEach(button => {
+        button.addEventListener("click", () => openResetPassword(button.dataset.id));
+      });
+
+      document.querySelectorAll(".expire-user-btn").forEach(button => {
+        button.addEventListener("click", () => expireUserSessions(button.dataset.id));
+      });
+    }
+
+    function renderSessions() {
+      const tbody = $("sessionsTbody");
+
+      if (!state.sessions.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="muted">세션이 없습니다.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = state.sessions.map(session => `
+        <tr>
+          <td><strong>${escapeHtml(session.userId)}</strong><div class="muted">${escapeHtml(shortToken(session.token))}</div></td>
+          <td>${roleBadges(session.roles)}</td>
+          <td>${escapeHtml(session.createdAt || "-")}</td>
+          <td>${escapeHtml(session.expiresAt || "-")}</td>
+          <td>${session.active ? `<span class="badge ok">Active</span>` : `<span class="badge off">Expired</span>`}</td>
+          <td>${escapeHtml(session.lastSeenAt || "-")}</td>
+          <td>
+            <button class="small-btn danger expire-session-btn" type="button" data-token="${escapeHtml(session.token)}" ${session.active ? "" : "disabled"}>만료</button>
+          </td>
+        </tr>
+      `).join("");
+
+      document.querySelectorAll(".expire-session-btn").forEach(button => {
+        button.addEventListener("click", () => expireSession(button.dataset.token));
+      });
+    }
+
+    function renderAuditLogs(logs) {
+      const tbody = $("auditTbody");
+
+      if (!logs.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="muted">감사 로그가 없습니다.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = logs.map(log => `
+        <tr>
+          <td>${escapeHtml(log.date)}</td>
+          <td>${escapeHtml(log.userId)}</td>
+          <td><strong>${escapeHtml(log.action)}</strong></td>
+          <td>${escapeHtml(log.target)}</td>
+          <td>${escapeHtml(log.detail)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderLoginAttempts(attempts) {
+      const tbody = $("loginTbody");
+
+      if (!attempts.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="muted">로그인 기록이 없습니다.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = attempts.map(item => {
+        const date = item.date || item.Date || "";
+        const userId = item.userId || item["User ID"] || "";
+        const result = item.result || item.Result || item.Success || item.success || "";
+        const message = item.message || item.Message || item.Reason || item.reason || "";
+
+        return `
+        <tr>
+          <td>${escapeHtml(date)}</td>
+          <td>${escapeHtml(userId)}</td>
+          <td>${resultBadge(result)}</td>
+          <td>${escapeHtml(normalizeLoginMessage(message))}</td>
+        </tr>
+      `;
+      }).join("");
+    }
+
+    function renderSettings(settings) {
+      [
+        "MAIL_ENABLED",
+        "MAIL_TO",
+        "DRIVE_FOLDER_ID",
+        "SESSION_HOURS",
+        "SYSTEM_VERIFY_EMAIL",
+        "SYSTEM_VERIFY_CODE_MINUTES",
+        "LOGIN_MAX_FAILURES",
+        "LOGIN_LOCK_MINUTES"
+      ].forEach(key => {
+        if ($(key)) $(key).value = settings[key] ?? "";
+      });
+    }
+
+    function openEditUser(id) {
+      const user = state.users.find(item => item.id === id);
+      if (!user) return;
+
+      $("editUserId").value = user.id;
+      $("editUserLabel").value = user.id;
+      $("editUserActive").value = user.active ? "Y" : "N";
+      setRoleChecks("editRole", user.roles || []);
+      $("editUserModal").style.display = "flex";
+    }
+
+    function closeEditUserModal() {
+      $("editUserModal").style.display = "none";
+    }
+
+    function openResetPassword(id) {
+      $("resetPwUserId").value = id;
+      $("resetPwUserLabel").value = id;
+      $("resetPwValue").value = "";
+      $("resetPwModal").style.display = "flex";
+      setTimeout(() => $("resetPwValue").focus(), 50);
+    }
+
+    function closeResetPwModal() {
+      $("resetPwModal").style.display = "none";
+    }
+
+    async function expireUserSessions(id) {
+      try {
+        await openConfirm("세션 만료", `${id} 계정의 모든 세션을 만료할까요?`, "세션 만료", true);
+
+        await withVerification("EXPIRE_USER_SESSIONS", id, async verifyCode => {
+          await api("expireUserSessions", { userId: id, verifyCode });
+        });
+      } catch (err) {}
+    }
+
+    async function expireSession(sessionToken) {
+      try {
+        await openConfirm("세션 만료", "선택한 세션을 만료할까요?", "세션 만료", true);
+
+        await withVerification("EXPIRE_SESSION", String(sessionToken).slice(0, 10), async verifyCode => {
+          await api("expireSession", { targetToken: sessionToken, verifyCode });
+        });
+      } catch (err) {}
+    }
+
+    function csvCell(value) {
+      const text = String(value ?? "");
+      return `"${text.replaceAll('"', '""')}"`;
+    }
+
+    function downloadCsv(filename, rows) {
+      const csv = "\ufeff" + rows.map(row => row.map(csvCell).join(",")).join("\n");
+      downloadCsvText(filename, csv);
+    }
+
+    function downloadCsvText(filename, csv) {
+      const blob = new Blob(["\ufeff" + String(csv || "")], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function exportSheet(sheetName) {
+      showLoading(`${sheetName} CSV 생성 중입니다...`);
+
+      try {
+        const data = await api("exportSheetData", { sheetName });
+        const stamp = new Date().toISOString().slice(0, 10);
+        downloadCsvText(data.filename || `${sheetName}_${stamp}.csv`, data.csv || "");
+      } catch (err) {
+        alert(err.message || "Export 실패");
+      } finally {
+        hideLoading();
+      }
+    }
+
+    document.querySelectorAll(".tab").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach(panel => panel.classList.remove("active"));
+        button.classList.add("active");
+        $(button.dataset.tab).classList.add("active");
+      });
+    });
+
+    $("loginForm").addEventListener("submit", async event => {
+      event.preventDefault();
+
+      $("loginError").style.display = "none";
+      showLoading("로그인 중입니다...");
+
+      try {
+        const data = await api("login", {
+          id: $("loginId").value.trim(),
+          password: $("loginPw").value,
+          requiredRole: "system"
+        });
+
+        if (!hasRole(data, "system")) {
+          throw new Error("System 권한이 없습니다.");
+        }
+
+        const authToken = extractToken(data);
+        if (!authToken) {
+          throw new Error("로그인 토큰을 받지 못했습니다. Apps Script 배포본을 확인해주세요.");
+        }
+
+        localStorage.setItem(TOKEN_KEY, authToken);
+        state.user = data;
+        const user = authUser(data);
+        $("currentUser").textContent = `${user.id} / ${(user.roles || []).join(",")}`;
+        showApp();
+        await refreshAll();
+      } catch (err) {
+        localStorage.removeItem(TOKEN_KEY);
+        $("loginError").textContent = err.message || "로그인 실패";
+        $("loginError").style.display = "block";
+      } finally {
+        hideLoading();
+      }
+    });
+
+    $("logoutBtn").addEventListener("click", async () => {
+      showLoading("로그아웃 중입니다...");
+
+      try {
+        await api("logout");
+      } catch (err) {
+      } finally {
+        localStorage.removeItem(TOKEN_KEY);
+        state.user = null;
+        hideLoading();
+        showLogin();
+      }
+    });
+
+    $("refreshBtn").addEventListener("click", refreshAll);
+
+    $("reloadUsersBtn").addEventListener("click", async () => {
+      showLoading("계정 목록을 불러오는 중입니다...");
+      try { await loadUsers(); } finally { hideLoading(); }
+    });
+
+    $("reloadSessionsBtn").addEventListener("click", async () => {
+      showLoading("세션 목록을 불러오는 중입니다...");
+      try { await loadSessions(); } finally { hideLoading(); }
+    });
+
+    $("reloadAuditBtn").addEventListener("click", async () => {
+      showLoading("감사 로그를 불러오는 중입니다...");
+      try { await loadAuditLogs(); } catch (err) { handleApiError(err, "감사 로그를 불러오지 못했습니다."); } finally { hideLoading(); }
+    });
+
+    $("reloadLoginBtn").addEventListener("click", async () => {
+      showLoading("로그인 기록을 불러오는 중입니다...");
+      try { await loadLoginAttempts(); } finally { hideLoading(); }
+    });
+
+    $("reloadSettingsBtn").addEventListener("click", async () => {
+      showLoading("설정을 불러오는 중입니다...");
+      try { await loadSettings(); } finally { hideLoading(); }
+    });
+
+    $("createUserForm").addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const id = $("newUserId").value.trim();
+      const password = $("newUserPw").value;
+      const roles = selectedRoles("newRole");
+
+      if (!id) return alert("User ID를 입력하세요.");
+      if (!password) return alert("Password를 입력하세요.");
+      if (!roles.length) return alert("Role을 선택하세요.");
+
+      await withVerification("CREATE_USER", id, async verifyCode => {
+          await api("createUser", {
+          id,
+          password,
+          roles,
+          active: $("newUserActive").value,
+          verifyCode
+        });
+
+        $("createUserForm").reset();
+      });
+    });
+
+    $("editUserCancelBtn").addEventListener("click", closeEditUserModal);
+
+    $("editUserSaveBtn").addEventListener("click", async () => {
+      const id = $("editUserId").value;
+      const roles = selectedRoles("editRole");
+
+      if (!roles.length) return alert("Role을 선택하세요.");
+
+      closeEditUserModal();
+
+      await withVerification("UPDATE_USER", id, async verifyCode => {
+        await api("updateUser", {
+          id,
+          roles,
+          active: $("editUserActive").value,
+          verifyCode
+        });
+      });
+    });
+
+    $("resetPwCancelBtn").addEventListener("click", closeResetPwModal);
+
+    $("resetPwSaveBtn").addEventListener("click", async () => {
+      const id = $("resetPwUserId").value;
+      const password = $("resetPwValue").value;
+
+      if (!password) return alert("새 비밀번호를 입력하세요.");
+
+      closeResetPwModal();
+
+      await withVerification("RESET_PASSWORD", id, async verifyCode => {
+        await api("resetPassword", { id, password, verifyCode });
+      });
+    });
+
+    $("expireAllBtn").addEventListener("click", async () => {
+      try {
+        await openConfirm("전체 세션 만료", "현재 본인 세션을 제외한 모든 세션을 만료할까요?", "전체 만료", true);
+
+        await withVerification("EXPIRE_ALL_SESSIONS", "ALL", async verifyCode => {
+          await api("expireAllSessions", { verifyCode });
+        });
+      } catch (err) {}
+    });
+
+    $("clearLoginBtn").addEventListener("click", async () => {
+      try {
+        await openConfirm("로그인 실패 기록 초기화", "로그인 실패 기록을 전체 초기화할까요?", "초기화", true);
+
+        await withVerification("CLEAR_LOGIN_ATTEMPTS", "ALL", async verifyCode => {
+          await api("clearLoginAttempts", { verifyCode });
+        });
+      } catch (err) {}
+    });
+
+    $("settingsForm").addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const settings = {
+        MAIL_ENABLED: $("MAIL_ENABLED").value,
+        MAIL_TO: $("MAIL_TO").value.trim(),
+        DRIVE_FOLDER_ID: $("DRIVE_FOLDER_ID").value.trim(),
+        SESSION_HOURS: $("SESSION_HOURS").value,
+        SYSTEM_VERIFY_EMAIL: $("SYSTEM_VERIFY_EMAIL").value.trim(),
+        SYSTEM_VERIFY_CODE_MINUTES: $("SYSTEM_VERIFY_CODE_MINUTES").value,
+        LOGIN_MAX_FAILURES: $("LOGIN_MAX_FAILURES").value,
+        LOGIN_LOCK_MINUTES: $("LOGIN_LOCK_MINUTES").value
+      };
+
+      await withVerification("UPDATE_SETTINGS", "SETTINGS", async verifyCode => {
+        await api("updateSettings", { settings, verifyCode });
+      });
+    });
+
+    $("checkDriveBtn").addEventListener("click", async () => {
+      showLoading("Drive 폴더를 점검 중입니다...");
+
+      try {
+        const data = await api("checkDriveFolder", {
+          folderId: $("DRIVE_FOLDER_ID").value.trim()
+        });
+
+        alert(`Drive 폴더 정상\n\nName: ${data.name}\nURL: ${data.url}`);
+      } catch (err) {
+        alert(err.message || "Drive 점검 실패");
+      } finally {
+        hideLoading();
+      }
+    });
+
+    $("exportAuditBtn").addEventListener("click", () => exportSheet("AuditLogs"));
+    $("exportLoginBtn").addEventListener("click", () => exportSheet("LoginAttempts"));
+
+    document.querySelectorAll(".export-sheet-btn").forEach(button => {
+      button.addEventListener("click", () => exportSheet(button.dataset.sheet));
+    });
+
+    $("verifyCancelBtn").addEventListener("click", () => {
+      if (state.pendingVerify) {
+        state.pendingVerify.reject(new Error("cancelled"));
+      }
+
+      closeVerifyModal();
+      hideLoading();
+    });
+
+    $("verifySubmitBtn").addEventListener("click", () => {
+      const code = $("verifyCode").value.trim();
+
+      if (!/^\d{6}$/.test(code)) {
+        $("verifyError").textContent = "6자리 인증코드를 입력하세요.";
+        $("verifyError").style.display = "block";
+        return;
+      }
+
+      if (state.pendingVerify) {
+        state.pendingVerify.resolve(code);
+      }
+
+      closeVerifyModal();
+    });
+
+    $("verifyCode").addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        $("verifySubmitBtn").click();
+      }
+    });
+
+    $("confirmCancelBtn").addEventListener("click", () => {
+      if (state.pendingConfirm) {
+        state.pendingConfirm.reject(new Error("cancelled"));
+      }
+
+      closeConfirmModal();
+    });
+
+    $("confirmOkBtn").addEventListener("click", () => {
+      if (state.pendingConfirm) {
+        state.pendingConfirm.resolve(true);
+      }
+
+      closeConfirmModal();
+    });
+
+    async function boot() {
+      const token = getStoredToken();
+
+      if (!token) {
+        showLogin();
+        return;
+      }
+
+      showLoading("세션 확인 중입니다...");
+
+      try {
+        const data = await api("validateToken");
+
+        if (!hasRole(data, "system")) {
+          throw new Error("System 권한이 없습니다.");
+        }
+
+        state.user = data;
+        const user = authUser(data);
+        $("currentUser").textContent = `${user.id} / ${(user.roles || []).join(",")}`;
+        showApp();
+        await refreshAll();
+      } catch (err) {
+        localStorage.removeItem(TOKEN_KEY);
+        showLogin();
+      } finally {
+        hideLoading();
+      }
+    }
+
+    boot();
   </script>
 </body>
-</html>`;
-  return HtmlService.createHtmlOutput(html).setTitle("RT Ticket Photo Upload");
-}
-
-function sendTicketMail_(t) {
-  const to = getSetting_("NOTIFY_EMAIL") || CONFIG.NOTIFY_EMAIL;
-  const subject = "[RT Ticket] " + t.ticketId + " / " + t.category;
-  const html = `
-<div style="font-family:Arial,'Malgun Gothic',sans-serif;color:#061f3d">
-  <div style="background:#06213f;color:#fff;padding:18px 22px;border-bottom:4px solid #48b9de">
-    <div style="font-size:24px;font-weight:800;letter-spacing:.5px">MAERSK</div>
-    <div style="font-size:13px;margin-top:4px">RT Ticket Support</div>
-  </div>
-  <div style="padding:22px">
-    <h2 style="margin:0 0 18px">새 RT 티켓이 접수되었습니다.</h2>
-    <table style="border-collapse:collapse;width:100%;max-width:760px;font-size:14px">
-      ${mailRow_("티켓번호", t.ticketId)}
-      ${mailRow_("접수일시", t.date)}
-      ${mailRow_("상태", t.status)}
-      ${mailRow_("카테고리", t.category)}
-      ${mailRow_("벌크라벨", t.bulk)}
-      ${mailRow_("SKU", t.sku)}
-      ${mailRow_("작업자 ID", t.creator)}
-      ${mailRow_("코멘트", t.comment)}
-      ${mailRow_("사진", '<a href="' + t.folderUrl + '">Drive 폴더 열기</a>')}
-    </table>
-    <p style="margin-top:20px;color:#456">접수된 RT 티켓 내용을 확인해주세요.</p>
-  </div>
-</div>`;
-  MailApp.sendEmail({ to, subject, htmlBody: html });
-}
-
-function mailRow_(label, value) {
-  return '<tr><th style="text-align:left;background:#eef4fb;border:1px solid #d9e3ef;padding:10px;width:140px">' + label + '</th><td style="border:1px solid #d9e3ef;padding:10px">' + value + '</td></tr>';
-}
-
-function escapeHtml_(value) {
-  return String(value || "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
-}
+</html>
