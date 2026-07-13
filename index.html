@@ -1116,6 +1116,7 @@
       if (!pendingSubmit) return;
 
       $("submitMessage").textContent = "";
+      confirmDialog.close();
 
       try {
         await withLoading("티켓을 접수 중입니다...", async () => {
@@ -1131,9 +1132,8 @@
           $("bulkHint").textContent = "필요 시 벌크라벨을 스캔하거나 수기입력 해주세요.";
 
           pendingSubmit = null;
-          confirmDialog.close();
 
-          showSuccessDialog(data.ticketId, data.uploadUrl, data.imageUrl || data.ticket?.image);
+          showSuccessDialog(data.ticketId, data.uploadUrl, data.folderUrl || data.imageUrl || data.ticket?.image);
 
           await loadTickets(false, lastLoadMode);
         });
