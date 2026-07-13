@@ -1279,15 +1279,25 @@
         return;
       }
 
-      tbody.innerHTML = logs.map(log => `
+      tbody.innerHTML = logs.map(log => {
+        const date = log.date || log.Date || "";
+        const userId = log.userId || log["User ID"] || "";
+        const action = log.action || log.Action || "";
+        const target = log.target || log.Target || "";
+        const result = log.result || log.Result || "";
+        const message = log.message || log.Message || log.detail || "";
+        const detail = [result, message].filter(Boolean).join(" / ");
+
+        return `
         <tr>
-          <td>${escapeHtml(log.date)}</td>
-          <td>${escapeHtml(log.userId)}</td>
-          <td><strong>${escapeHtml(log.action)}</strong></td>
-          <td>${escapeHtml(log.target)}</td>
-          <td>${escapeHtml(log.detail)}</td>
+          <td>${escapeHtml(date)}</td>
+          <td>${escapeHtml(userId)}</td>
+          <td><strong>${escapeHtml(action)}</strong></td>
+          <td>${escapeHtml(target)}</td>
+          <td>${escapeHtml(detail)}</td>
         </tr>
-      `).join("");
+      `;
+      }).join("");
     }
 
     function renderLoginAttempts(attempts) {
