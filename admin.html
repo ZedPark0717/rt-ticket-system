@@ -4,9 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>RT Ticket Admin</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <style>
+<style>
     :root{--navy:#071d3a;--blue:#2f63e7;--sky:#42b8d7;--line:#d9e3ef;--text:#071426;--muted:#68768a;--radius:8px;--shadow:0 18px 45px rgba(7,29,58,.12)}
     *{box-sizing:border-box}
     body{margin:0;font-family:Arial,"Noto Sans KR",sans-serif;background:linear-gradient(180deg,#edf6fb 0%,#f7f9fc 52%,#edf4fa 100%);color:var(--text)}
@@ -529,25 +527,143 @@
     }
 
     function drawChart(id, type, labels, data){
-      if(charts[id]) charts[id].destroy();
-      charts[id] = new Chart($(id),{
-        type,
-        data:{
-          labels,
-          datasets:[{
-            data,
-            borderColor:"#2f63e7",
-            backgroundColor:["#42b8d7","#2f63e7","#7c3aed","#10a66a","#f59e0b","#ef4444","#0b2f5b"],
-            fill:type === "line" ? false : true,
-            tension:.25
-          }]
-        },
-        options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          plugins:{ legend:{ display:type === "doughnut", position:"bottom" } },
-          scales:type === "bar" || type === "line" ? { y:{ beginAtZero:true, ticks:{ precision:0 } } } : undefined
-        }
+      const canvas = $(id);
+      if(!canvas) return;
+      const parent = canvas.parentElement;
+      const rect = parent ? parent.getBoundingClientRect() : canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const width = Math.max(280, Math.floor(rect.width || 420));
+      const height = Math.max(220, Math.floor(rect.height || 260));
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = width + "px";
+      canvas.style.height = height + "px";
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.clearRect(0,0,width,height);
+
+      const colors = ["#42b8d7","#2f63e7","#7c3aed","#10a66a","#f59e0b","#ef4444","#0b2f5b"];
+      const cleanLabels = (labels || []).map(v => String(v || "미분류"));
+      const values = (data || []).map(v => Number(v) || 0);
+      const total = values.reduce((a,b) => a + b, 0);
+
+      ctx.font = "12px Arial";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#68768a";
+
+      if(!cleanLabels.length || !total){
+        ctx.textAlign = "center";
+        ctx.fillText("표시할 데이터가 없습니다", width / 2, height / 2);
+        return;
+      }
+
+      if(type === "doughnut"){
+        const cx = Math.min(width * .38, width / 2);
+        const cy = height / 2 - 6;
+        const radius = Math.min(width, height) * .28;
+        const inner = radius * .58;
+        let start = -Math.PI / 2;
+        values.forEach((value, index) => {
+          const angle = value / total * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, radius, start, start + angle);
+          ctx.closePath();
+          ctx.fillStyle = colors[index % colors.length];
+          ctx.fill();
+          start += angle;
+        });
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.beginPath();
+        ctx.arc(cx, cy, inner, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "#071d3a";
+        ctx.font = "900 22px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(String(total), cx, cy);
+
+        const lx = width * .66;
+        let ly = Math.max(30, cy - cleanLabels.length * 12);
+        ctx.font = "12px Arial";
+        cleanLabels.forEach((label, index) => {
+          ctx.fillStyle = colors[index % colors.length];
+          ctx.fillRect(lx, ly - 5, 10, 10);
+          ctx.fillStyle = "#10233f";
+          ctx.textAlign = "left";
+          ctx.fillText(`${label} ${values[index]}`, lx + 16, ly);
+          ly += 22;
+        });
+        return;
+      }
+
+      const left = 42;
+      const right = 18;
+      const top = 22;
+      const bottom = 48;
+      const plotW = width - left - right;
+      const plotH = height - top - bottom;
+      const max = Math.max(...values, 1);
+      ctx.strokeStyle = "#d9e3ef";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(left, top);
+      ctx.lineTo(left, top + plotH);
+      ctx.lineTo(left + plotW, top + plotH);
+      ctx.stroke();
+
+      for(let i = 0; i <= 4; i++){
+        const y = top + plotH - plotH * i / 4;
+        ctx.strokeStyle = "#eef3f8";
+        ctx.beginPath();
+        ctx.moveTo(left, y);
+        ctx.lineTo(left + plotW, y);
+        ctx.stroke();
+        ctx.fillStyle = "#68768a";
+        ctx.textAlign = "right";
+        ctx.fillText(String(Math.round(max * i / 4)), left - 8, y);
+      }
+
+      if(type === "line"){
+        const step = values.length > 1 ? plotW / (values.length - 1) : plotW;
+        ctx.strokeStyle = "#2f63e7";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        values.forEach((value, index) => {
+          const x = left + step * index;
+          const y = top + plotH - (value / max) * plotH;
+          if(index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        values.forEach((value, index) => {
+          const x = left + step * index;
+          const y = top + plotH - (value / max) * plotH;
+          ctx.fillStyle = "#42b8d7";
+          ctx.beginPath();
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      } else {
+        const gap = Math.min(14, plotW / values.length * .25);
+        const barW = Math.max(8, (plotW - gap * (values.length - 1)) / values.length);
+        values.forEach((value, index) => {
+          const barH = value / max * plotH;
+          const x = left + index * (barW + gap);
+          const y = top + plotH - barH;
+          ctx.fillStyle = colors[index % colors.length];
+          ctx.fillRect(x, y, barW, barH);
+        });
+      }
+
+      ctx.fillStyle = "#10233f";
+      ctx.font = "11px Arial";
+      ctx.textAlign = "center";
+      const labelStep = Math.ceil(cleanLabels.length / Math.max(1, Math.floor(plotW / 74)));
+      cleanLabels.forEach((label, index) => {
+        if(index % labelStep !== 0) return;
+        const x = left + (values.length > 1 ? plotW / (values.length - 1) * index : plotW / 2);
+        const short = label.length > 9 ? label.slice(0,9) + "..." : label;
+        ctx.fillText(short, x, top + plotH + 22);
       });
     }
 
