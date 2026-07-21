@@ -823,6 +823,7 @@
     let allTickets = [];
     let currentTicket = null;
     let pendingSubmit = null;
+    let isSubmitting = false;
     let loadingCount = 0;
     let lastLoadMode = "recent";
 
@@ -878,6 +879,14 @@
       }[safe] || "s-received";
 
       return `<span class="pill ${className}">${escapeHtml(safe)}</span>`;
+    }
+
+    function isTicketReminded(ticket) {
+      return ticket && (ticket.reminded === "Y" || String(ticket.history || "").includes("[리마인드]"));
+    }
+
+    function isTicketDone(ticket) {
+      return ticket && String(ticket.status || "").trim() === "완료";
     }
 
     function todayMinus(days) {
@@ -1113,8 +1122,10 @@
     });
 
     $("confirmSubmitBtn").addEventListener("click", async () => {
-      if (!pendingSubmit) return;
+      if (!pendingSubmit || isSubmitting) return;
 
+      isSubmitting = true;
+      $("confirmSubmitBtn").disabled = true;
       $("submitMessage").textContent = "";
       confirmDialog.close();
 
@@ -1139,6 +1150,9 @@
         });
       } catch (err) {
         $("submitMessage").textContent = err.message || "접수 실패";
+      } finally {
+        isSubmitting = false;
+        $("confirmSubmitBtn").disabled = false;
       }
     });
 
@@ -1172,7 +1186,10 @@
       }
 
       $("ticketList").innerHTML = rows.map(ticket => {
-        const reminded = ticket.reminded === "Y" || String(ticket.history || "").includes("[리마인드]");
+        const reminded = isTicketReminded(ticket);
+        const done = isTicketDone(ticket);
+        const disabled = reminded || done;
+        const buttonText = done ? "처리 완료" : reminded ? "리마인드 완료" : "리마인드";
 
         return `
           <div class="ticket-item">
@@ -1185,8 +1202,8 @@
 
             ${statusPill(ticket.status)}
 
-            <button class="primary remind-btn" type="button" data-id="${escapeHtml(ticket.ticketId)}">
-              ${reminded ? "리마인드 완료" : "리마인드"}
+            <button class="${disabled ? "ghost" : "primary"} remind-btn" type="button" data-id="${escapeHtml(ticket.ticketId)}" ${disabled ? "disabled" : ""}>
+              ${buttonText}
             </button>
           </div>
         `;
@@ -1197,7 +1214,10 @@
       });
 
       document.querySelectorAll(".remind-btn").forEach(button => {
-        button.addEventListener("click", () => remindTicket(button.dataset.id));
+        button.addEventListener("click", () => {
+          if (button.disabled) return;
+          remindTicket(button.dataset.id);
+        });
       });
     }
 
@@ -1294,16 +1314,35 @@
         $("detailUploadLink").href = "#";
       }
 
+      const reminded = isTicketReminded(currentTicket);
+      const done = isTicketDone(currentTicket);
+      $("detailRemindBtn").disabled = reminded || done;
+      $("detailRemindBtn").textContent = done ? "처리 완료" : reminded ? "리마인드 완료" : "리마인드";
+      $("detailRemindBtn").className = reminded || done ? "ghost" : "primary";
+
       detailDialog.showModal();
     }
 
     async function remindTicket(ticketId) {
+      const ticket = allTickets.find(item => item.ticketId === ticketId) || currentTicket;
+      if (isTicketDone(ticket)) {
+        alert("완료된 티켓은 리마인드할 수 없습니다.");
+        return;
+      }
+      if (isTicketReminded(ticket)) {
+        alert("이미 리마인드 완료된 티켓입니다.");
+        return;
+      }
       if (!confirm(`${ticketId} 티켓을 리마인드 처리할까요?`)) return;
 
       try {
         await withLoading("리마인드 처리 중입니다...", async () => {
-          await api("remindTicket", { ticketId });
+          const result = await api("remindTicket", { ticketId });
           await loadTickets(false, lastLoadMode);
+
+          if (result.alreadyReminded) {
+            alert(result.message || "이미 리마인드 완료된 티켓입니다.");
+          }
 
           if (currentTicket && currentTicket.ticketId === ticketId) {
             currentTicket = allTickets.find(ticket => ticket.ticketId === ticketId);
