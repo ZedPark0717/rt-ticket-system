@@ -43,10 +43,7 @@
       gap: 14px;
     }
 
-    .brand {
-      display: grid;
-      gap: 2px;
-    }
+    .brand { display: grid; gap: 2px; }
 
     .brand strong {
       font-size: 19px;
@@ -163,15 +160,8 @@
       text-align: center;
     }
 
-    .primary {
-      background: #2f61df;
-      color: #fff;
-    }
-
-    .ghost {
-      background: #e8f0f8;
-      color: var(--navy);
-    }
+    .primary { background: #2f61df; color: #fff; }
+    .ghost { background: #e8f0f8; color: var(--navy); }
 
     button:disabled {
       opacity: .65;
@@ -214,6 +204,20 @@
       font-weight: 700;
     }
 
+    .version {
+      font-size: 11px;
+      color: #7a8aa0;
+      font-weight: 800;
+    }
+
+    iframe {
+      width: 0;
+      height: 0;
+      border: 0;
+      position: absolute;
+      left: -9999px;
+    }
+
     @media (max-width: 520px) {
       .top-inner { align-items: flex-start; }
       .logo { height: 30px; max-width: 120px; }
@@ -245,7 +249,7 @@
         <div id="ticketId" class="ticket-pill">티켓번호 확인 중</div>
 
         <div class="file-box">
-          <input id="files" type="file" accept="image/*" capture="environment" multiple />
+          <input id="files" type="file" accept="image/*" multiple />
           <p class="hint">사진을 여러 장 선택할 수 있습니다. 업로드 중에는 화면을 닫지 마세요.</p>
         </div>
 
@@ -256,14 +260,19 @@
           <button id="uploadBtn" class="primary" type="button">사진 업로드</button>
           <a id="homeLink" class="button ghost" href="./index.html">티켓 페이지로 돌아가기</a>
         </div>
+
+        <div class="version">UPLOAD-GALLERY-IFRAME-POST-20260714</div>
       </div>
     </section>
   </main>
+
+  <iframe id="uploadFrame" name="uploadFrame"></iframe>
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
     const params = new URLSearchParams(location.search);
     const ticketId = (params.get("ticketId") || "").trim();
+    const uploadToken = (params.get("token") || "").trim();
 
     const $ = id => document.getElementById(id);
 
@@ -287,28 +296,65 @@
       });
     }
 
+    function postViaIframe(payload) {
+      return new Promise((resolve, reject) => {
+        const form = document.createElement("form");
+        const iframe = $("uploadFrame");
+        const timeout = window.setTimeout(() => {
+          cleanup();
+          reject(new Error("업로드 응답 시간이 초과되었습니다."));
+        }, 60000);
+
+        function cleanup() {
+          window.clearTimeout(timeout);
+          iframe.removeEventListener("load", onLoad);
+          form.remove();
+        }
+
+        function onLoad() {
+          cleanup();
+          resolve({ ok: true });
+        }
+
+        form.method = "POST";
+        form.action = API_URL;
+        form.target = "uploadFrame";
+        form.enctype = "application/x-www-form-urlencoded";
+        form.style.display = "none";
+
+        Object.keys(payload).forEach(key => {
+          const input = document.createElement("textarea");
+          input.name = key;
+          input.value = payload[key] == null ? "" : String(payload[key]);
+          form.appendChild(input);
+        });
+
+        iframe.addEventListener("load", onLoad);
+        document.body.appendChild(form);
+        form.submit();
+      });
+    }
+
     async function uploadOne(file) {
       const data = await readFile(file);
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "uploadTicketPhoto",
-          ticketId,
-          fileName: file.name,
-          mimeType: file.type || "image/jpeg",
-          data
-        })
+      return postViaIframe({
+        action: "uploadTicketPhoto",
+        ticketId,
+        token: uploadToken,
+        fileName: file.name,
+        mimeType: file.type || "image/jpeg",
+        data
       });
-
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || "업로드 실패");
-      return json;
     }
 
     async function uploadFiles() {
       if (!ticketId) {
         setMessage("티켓번호가 없습니다. QR 링크를 다시 확인해주세요.", "error");
+        return;
+      }
+
+      if (!uploadToken) {
+        setMessage("업로드 권한 정보가 없습니다. QR코드를 다시 확인해주세요.", "error");
         return;
       }
 
@@ -330,7 +376,7 @@
         }
 
         $("files").value = "";
-        setMessage("업로드 완료되었습니다.", "ok");
+        setMessage("업로드 요청이 완료되었습니다. Drive 폴더에서 사진을 확인해주세요.", "ok");
       } catch (err) {
         setMessage(err.message || "업로드 실패", "error");
       } finally {
