@@ -809,9 +809,26 @@
       <div class="actions">
         <a id="photoLink" class="ghost" href="#" target="_blank" rel="noopener">사진 폴더 열기</a>
         <a id="detailUploadLink" class="ghost" href="#" target="_blank" rel="noopener">사진 업로드</a>
+        <button id="editTicketBtn" class="primary" type="button">티켓 수정</button>
         <button id="detailRemindBtn" class="primary" type="button">리마인드</button>
       </div>
     </div>
+  </dialog>
+
+  <dialog id="editTicketDialog">
+    <div class="modal-head"><h2 id="editTicketTitle">티켓 수정</h2><button id="editTicketCloseBtn" class="ghost" type="button">닫기</button></div>
+    <form id="editTicketForm" class="modal-body">
+      <p class="hint" style="margin:0 0 16px">등록 내용을 수정합니다. 티켓번호, 접수일시, 처리 상태와 사진 폴더는 유지됩니다.</p>
+      <div class="row">
+        <div class="field"><label for="editCategory">문제 카테고리</label><select id="editCategory"><option value="">선택해주세요</option><option>RCP 오류</option><option>RFID 오류</option><option>벌크 훼손</option><option>타매장</option><option>기타 문제</option></select></div>
+        <div class="field"><label for="editCreatorId">작업자 ID</label><input id="editCreatorId"></div>
+      </div>
+      <div class="field"><label for="editBulkLabel">벌크라벨</label><textarea id="editBulkLabel" rows="3"></textarea></div>
+      <div class="field"><label for="editSku">SKU</label><textarea id="editSku" rows="3"></textarea><p class="hint">여러 항목은 줄바꿈 또는 쉼표로 구분합니다.</p></div>
+      <div class="field"><label for="editComment">코멘트</label><textarea id="editComment" rows="4"></textarea></div>
+      <div id="editTicketError" class="error" role="alert"></div>
+      <div class="actions" style="margin-top:16px"><button id="editTicketSaveBtn" class="primary" type="submit">수정 저장</button><button id="editTicketCancelBtn" class="ghost" type="button">취소</button></div>
+    </form>
   </dialog>
 
   <script src="./assets/qrcode.min.js?v=20260708"></script>
@@ -1201,6 +1218,21 @@
       $("submitMessage").textContent = "";
       confirmDialog.close();
 
+      // Reserve the window during the click so the asynchronous API response
+      // does not cause the browser to block the upload page as a popup.
+      let uploadWindow = null;
+      try {
+        uploadWindow = window.open("about:blank", "_blank");
+        if (uploadWindow) {
+          uploadWindow.opener = null;
+          uploadWindow.document.title = "RT 티켓 접수 중";
+          uploadWindow.document.body.textContent = "티켓 접수 중입니다. 완료되면 사진 업로드 화면이 열립니다.";
+        }
+      } catch (err) {
+        if (uploadWindow && !uploadWindow.closed) uploadWindow.close();
+        uploadWindow = null;
+      }
+
       try {
         await withLoading("티켓을 접수 중입니다...", async () => {
           const data = await api("createTicket", {
@@ -1215,9 +1247,20 @@
 
           showSuccessDialog(data.ticketId, data.uploadUrl, data.folderUrl || data.imageUrl || data.ticket?.image);
 
+          if (uploadWindow && !uploadWindow.closed) {
+            if (data.uploadUrl) {
+              uploadWindow.location.replace(data.uploadUrl);
+            } else {
+              uploadWindow.close();
+              $("submitMessage").textContent = "티켓은 접수되었지만 사진 업로드 주소가 없습니다. 서버 배포 버전을 확인해주세요.";
+            }
+          }
+          uploadWindow = null;
+
           await loadTickets(false, lastLoadMode);
         });
       } catch (err) {
+        if (uploadWindow && !uploadWindow.closed) uploadWindow.close();
         $("submitMessage").textContent = err.message || "접수 실패";
       } finally {
         isSubmitting = false;
@@ -1389,8 +1432,82 @@
       $("detailRemindBtn").textContent = done ? "처리 완료" : reminded ? "리마인드 완료" : "리마인드";
       $("detailRemindBtn").className = reminded || done ? "ghost" : "primary";
 
-      detailDialog.showModal();
+      $("editTicketBtn").style.display = ["완료", "삭제됨"].includes(String(currentTicket.status || "").trim()) ? "none" : "inline-flex";
+      if (!detailDialog.open) detailDialog.showModal();
     }
+
+    let editingTicket = null;
+    let savingTicket = false;
+
+    $("editTicketBtn").addEventListener("click", async () => {
+      if (!currentTicket) return;
+      const ticketId = currentTicket.ticketId;
+      try {
+        await withLoading("수정할 내용을 불러오는 중입니다...", async () => {
+          const result = await api("getTicket", { ticketId });
+          const ticket = result.ticket;
+          if (!ticket || !ticket.editVersion) throw new Error("서버를 티켓 수정 기능이 포함된 새 버전으로 배포해주세요.");
+          if (["완료", "삭제됨"].includes(String(ticket.status || "").trim())) throw new Error("완료되었거나 삭제된 티켓은 수정할 수 없습니다.");
+          editingTicket = ticket;
+          $("editTicketTitle").textContent = ticket.ticketId + " 수정";
+          $("editCategory").value = ticket.category || "";
+          $("editCreatorId").value = ticket.creatorId || "";
+          $("editBulkLabel").value = String(ticket.bulkLabel || "").split(";").join("\n");
+          $("editSku").value = String(ticket.sku || "").split(";").join("\n");
+          $("editComment").value = ticket.comment || "";
+          $("editTicketError").style.display = "none";
+          detailDialog.close();
+          $("editTicketDialog").showModal();
+        });
+      } catch (err) { alert(err.message || "티켓을 불러오지 못했습니다."); }
+    });
+
+    function closeTicketEditor() {
+      if (savingTicket) return;
+      $("editTicketDialog").close();
+      editingTicket = null;
+    }
+    $("editTicketCloseBtn").addEventListener("click", closeTicketEditor);
+    $("editTicketCancelBtn").addEventListener("click", closeTicketEditor);
+    $("editTicketDialog").addEventListener("cancel", event => {
+      if (savingTicket) event.preventDefault();
+      else editingTicket = null;
+    });
+    $("editTicketForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      if (!editingTicket || savingTicket) return;
+      const payload = {
+        ticketId: editingTicket.ticketId,
+        editVersion: editingTicket.editVersion,
+        category: $("editCategory").value,
+        creatorId: $("editCreatorId").value.trim(),
+        bulkLabel: $("editBulkLabel").value.trim(),
+        sku: $("editSku").value.trim(),
+        comment: $("editComment").value.trim()
+      };
+      const missing = getMissingFields(payload);
+      if (missing.length && !confirm(missing.join(", ") + " 항목이 비어있습니다. 그래도 저장할까요?")) return;
+      savingTicket = true;
+      $("editTicketError").style.display = "none";
+      try {
+        await withLoading("수정 내용을 저장 중입니다...", async () => {
+          const result = await api("updateTicket", payload);
+          $("editTicketDialog").close();
+          editingTicket = null;
+          // Apply the returned ticket immediately, even if a subsequent refresh fails.
+          allTickets = allTickets.map(ticket => ticket.ticketId === payload.ticketId ? result.ticket : ticket);
+          renderTickets(allTickets);
+          renderCounts();
+          await loadTickets(false, lastLoadMode);
+          const keyword = $("ticketSearch").value.trim().toLowerCase();
+          renderTickets(keyword ? allTickets.filter(ticket => [ticket.ticketId, ticket.date].join(" ").toLowerCase().includes(keyword)) : allTickets);
+          openDetail(payload.ticketId);
+        });
+      } catch (err) {
+        $("editTicketError").textContent = err.message || "수정 저장에 실패했습니다.";
+        $("editTicketError").style.display = "block";
+      } finally { savingTicket = false; }
+    });
 
     async function remindTicket(ticketId) {
       const ticket = allTickets.find(item => item.ticketId === ticketId) || currentTicket;
