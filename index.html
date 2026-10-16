@@ -822,6 +822,8 @@
       <div id="detailGrid" class="detail-grid"></div>
 
       <div class="actions">
+        <button id="ticketPhotosBtn" class="primary" type="button">티켓 사진 보기</button>
+        <button id="requestDeleteBtn" class="ghost" type="button">삭제 요청</button>
         <a id="photoLink" class="ghost" href="#" target="_blank" rel="noopener">사진 폴더 열기</a>
         <a id="detailUploadLink" class="ghost" href="#" target="_blank" rel="noopener">사진 업로드</a>
         <button id="editTicketBtn" class="primary" type="button">티켓 수정</button>
@@ -847,6 +849,21 @@
   </dialog>
 
 
+
+  <dialog id="ticketDeleteRequestDialog" aria-labelledby="ticketDeleteRequestTitle">
+    <div class="modal-head"><h2 id="ticketDeleteRequestTitle">티켓 삭제 요청</h2><button id="deleteRequestCloseBtn" class="ghost" type="button">닫기</button></div>
+    <form id="ticketDeleteRequestForm" class="modal-body">
+      <p class="hint">삭제 사유를 작성하면 담당자에게 메일을 보냅니다. 티켓은 즉시 삭제되지 않습니다.</p>
+      <div class="field" style="margin-top:16px"><label for="deleteRequestReason">삭제 요청 사유</label><textarea id="deleteRequestReason" maxlength="1000" rows="4" required placeholder="예: 중복 접수되어 삭제 요청합니다."></textarea></div>
+      <p id="deleteRequestError" class="error" role="alert"></p>
+      <div class="actions"><button id="deleteRequestSaveBtn" class="primary" type="submit">삭제 요청 보내기</button><button id="deleteRequestCancelBtn" class="ghost" type="button">취소</button></div>
+    </form>
+  </dialog>
+  <dialog id="ticketPhotosDialog" aria-labelledby="ticketPhotosTitle">
+    <div class="modal-head"><h2 id="ticketPhotosTitle">티켓 사진</h2><button id="ticketPhotosCloseBtn" class="ghost" type="button">닫기</button></div>
+    <div class="modal-body"><p class="hint">사진 이름을 누르면 새 창에서 해당 사진을 열람합니다. Drive 접근 권한이 필요할 수 있습니다.</p><div id="ticketPhotosList" style="display:grid;gap:10px;margin-top:16px"></div><p id="ticketPhotosMessage" class="message" role="status"></p><a id="ticketPhotosFolder" class="ghost" target="_blank" rel="noopener" style="display:none">사진 폴더 전체 열기</a></div>
+  </dialog>
+
   <dialog id="bulkScannerDialog" aria-labelledby="bulkScannerTitle">
     <div class="modal-head"><h2 id="bulkScannerTitle">벌크 바코드 스캔</h2><button id="bulkScannerClose" class="ghost" type="button">닫기</button></div>
     <div class="modal-body">
@@ -858,7 +875,6 @@
       </div>
       <p class="hint">긴 바코드는 휴대폰을 가로로 돌리면 더 크게 볼 수 있습니다. 너무 가까이 대지 말고 초점이 선명해질 때까지 거리를 조절하세요.</p>
       <div class="row" style="margin-top:12px">
-        <div class="field"><label for="bulkScanCamera">카메라 선택</label><select id="bulkScanCamera"><option value="">후면 카메라 자동 선택</option></select></div>
         <div class="field"><label for="bulkScanZoom">확대 <span id="bulkScanZoomValue">1×</span></label><input id="bulkScanZoom" type="range" min="1" max="1" value="1" step="0.1" disabled></div>
       </div>
       <button id="bulkScanTorch" class="ghost" type="button" hidden>조명 켜기</button>
@@ -1597,6 +1613,7 @@ nuclear facility.
                 ${escapeHtml(ticket.ticketId)}
               </button>
               <small>${escapeHtml(ticket.category)} / ${escapeHtml(ticket.date)}</small>
+              ${(ticket.deletionRequested || String(ticket.history || "").includes("[삭제요청]")) ? '<small style="color:#b45309;font-weight:800">삭제 요청 접수됨</small>' : ""}
             </div>
 
             ${statusPill(ticket.status)}
@@ -1720,8 +1737,72 @@ nuclear facility.
       $("detailRemindBtn").className = reminded || done ? "ghost" : "primary";
 
       $("editTicketBtn").style.display = ["완료", "삭제됨"].includes(String(currentTicket.status || "").trim()) ? "none" : "inline-flex";
+      const deletionRequested = Boolean(currentTicket.deletionRequested || String(currentTicket.history || "").includes("[삭제요청]"));
+      const deletionMailSent = Boolean(currentTicket.deletionRequestMailSent || String(currentTicket.history || "").includes("[삭제요청메일발송]"));
+      $("requestDeleteBtn").style.display = currentTicket.status === "삭제됨" ? "none" : "inline-flex";
+      $("requestDeleteBtn").disabled = deletionRequested && deletionMailSent;
+      $("requestDeleteBtn").textContent = deletionRequested ? (deletionMailSent ? "삭제 요청 완료" : "삭제 요청 메일 재전송") : "삭제 요청";
       if (!detailDialog.open) detailDialog.showModal();
     }
+
+    let deleteRequestTicketId = "";
+    let deleteRequestBusy = false;
+    $("requestDeleteBtn").addEventListener("click", () => {
+      if (!currentTicket) return;
+      deleteRequestTicketId = currentTicket.ticketId;
+      $("ticketDeleteRequestTitle").textContent = deleteRequestTicketId + " 삭제 요청";
+      $("deleteRequestReason").value = "";
+      $("deleteRequestError").style.display = "none";
+      const existing = String(currentTicket.history || "").match(/\[삭제요청\]\s*(\{[^\n]*\})/);
+      if (existing) {try {$("deleteRequestReason").value = JSON.parse(existing[1]).reason || "";} catch(ignore) {}}
+      $("deleteRequestReason").readOnly = Boolean(existing);
+      $("deleteRequestSaveBtn").textContent = existing ? "삭제 요청 메일 재전송" : "삭제 요청 보내기";
+      $("ticketDeleteRequestDialog").showModal();
+    });
+    function closeDeleteRequest(){if (!deleteRequestBusy) $("ticketDeleteRequestDialog").close();}
+    $("deleteRequestCloseBtn").addEventListener("click", closeDeleteRequest);
+    $("deleteRequestCancelBtn").addEventListener("click", closeDeleteRequest);
+    $("ticketDeleteRequestDialog").addEventListener("cancel", event => {if(deleteRequestBusy)event.preventDefault();});
+    $("ticketDeleteRequestForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      if (deleteRequestBusy || !deleteRequestTicketId) return;
+      const reason = $("deleteRequestReason").value.trim();
+      if (!reason) {$("deleteRequestError").textContent="삭제 요청 사유를 입력해주세요.";$("deleteRequestError").style.display="block";return;}
+      deleteRequestBusy = true;
+      $("deleteRequestError").style.display = "none";
+      try {
+        const result = await withLoading("삭제 요청을 전송 중입니다...", () => api("requestTicketDeletion", { ticketId:deleteRequestTicketId, reason }));
+        allTickets = allTickets.map(ticket => ticket.ticketId === deleteRequestTicketId ? result.ticket : ticket);
+        renderTickets(allTickets);renderCounts();
+        $("ticketDeleteRequestDialog").close();
+        openDetail(deleteRequestTicketId);
+        alert(result.mailSent ? (result.alreadyRequested ? "이미 삭제 요청과 메일 발송이 완료된 티켓입니다." : "삭제 요청을 기록하고 담당자에게 메일을 발송했습니다. 티켓은 담당자 확인 후 삭제됩니다.") : result.message);
+      } catch(err) {$("deleteRequestError").textContent=err.message||"삭제 요청에 실패했습니다.";$("deleteRequestError").style.display="block";}
+      finally {deleteRequestBusy=false;}
+    });
+    let ticketPhotoRequest = 0;
+    $("ticketPhotosCloseBtn").addEventListener("click", () => {ticketPhotoRequest++;$("ticketPhotosDialog").close();});
+    $("ticketPhotosDialog").addEventListener("cancel", () => ticketPhotoRequest++);
+    $("ticketPhotosBtn").addEventListener("click", async () => {
+      if (!currentTicket) return;
+      const ticketId=currentTicket.ticketId,request=++ticketPhotoRequest;
+      $("ticketPhotosTitle").textContent=ticketId+" 사진";
+      $("ticketPhotosList").replaceChildren();$("ticketPhotosFolder").style.display="none";
+      $("ticketPhotosMessage").textContent="이 티켓의 사진 목록을 불러오는 중입니다...";
+      $("ticketPhotosDialog").showModal();
+      try {
+        const result=await api("listTicketPhotos",{ticketId});
+        if(request!==ticketPhotoRequest||!$("ticketPhotosDialog").open)return;
+        for(const photo of result.photos||[]){
+          const url=new URL(photo.url);
+          if(url.protocol!=="https:"||url.hostname!=="drive.google.com")continue;
+          const link=document.createElement("a");link.className="ghost";link.href=url.href;link.target="_blank";link.rel="noopener";link.textContent="사진 열기 · "+photo.name;link.style.justifyContent="flex-start";link.style.overflowWrap="anywhere";$("ticketPhotosList").appendChild(link);
+        }
+        const count=$("ticketPhotosList").childElementCount;
+        $("ticketPhotosMessage").textContent=count ? (count+"장의 사진이 있습니다."+(result.hasMore?" 나머지는 사진 폴더 전체 열기에서 확인해주세요.":"")) : (result.hasMore?"목록에 사진이 없습니다. 사진 폴더 전체 열기에서 확인해주세요.":"아직 업로드된 사진이 없습니다.");
+        if(result.folderUrl){const url=new URL(result.folderUrl);if(url.protocol==="https:"&&url.hostname==="drive.google.com"){$("ticketPhotosFolder").href=url.href;$("ticketPhotosFolder").style.display="inline-flex";}}
+      } catch(err){if(request===ticketPhotoRequest)$("ticketPhotosMessage").textContent=err.message||"사진을 불러오지 못했습니다.";}
+    });
 
     let editingTicket = null;
     let savingTicket = false;
@@ -1906,26 +1987,16 @@ nuclear facility.
       stopBulkScan();const generation=bulkScanGeneration;
       const video=$("bulkScannerVideo");$("bulkScanFreeze").hidden=true;video.style.display="block";$("bulkScanStage").classList.remove("recognized");
       $("bulkScannerResult").value="";$("bulkScannerApply").disabled=true;$("bulkScanTorch").hidden=true;$("bulkScanTorch").dataset.enabled="N";$("bulkScanTorch").textContent="조명 켜기";
-      $("bulkScanZoom").disabled=true;$("bulkScanZoom").closest(".field").hidden=true;$("bulkScanCamera").closest(".field").hidden=true;$("bulkScannerStatus").textContent="카메라 사용을 허용해주세요. 고화질 후면 카메라를 준비하고 있습니다...";
+      $("bulkScanZoom").disabled=true;$("bulkScanZoom").closest(".field").hidden=true;$("bulkScannerStatus").textContent="카메라 사용을 허용해주세요. 고화질 후면 카메라를 준비하고 있습니다...";
       try{
         if(!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$("bulkScannerStatus").textContent="HTTPS 사이트를 Safari 또는 Chrome으로 열거나 직접 입력해주세요.";return;}
-        const deviceId=$("bulkScanCamera").value;
-        const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{...(deviceId?{deviceId:{exact:deviceId}}:{facingMode:{ideal:"environment"}}),width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:24,max:30}}});
+        const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:24,max:30}}});
         if(generation!==bulkScanGeneration||!$("bulkScannerDialog").open){stream.getTracks().forEach(track=>track.stop());return;}
         bulkScanStream=stream;const track=stream.getVideoTracks()[0];const caps=track.getCapabilities?track.getCapabilities():{};
         if(caps.focusMode&&caps.focusMode.includes("continuous")){try{await track.applyConstraints({advanced:[{focusMode:"continuous"}]});}catch(ignore){}}
         if(generation!==bulkScanGeneration)return;
         if(caps.zoom){$("bulkScanZoom").closest(".field").hidden=false;const z=$("bulkScanZoom");z.min=caps.zoom.min;z.max=Math.min(caps.zoom.max,4);z.step=caps.zoom.step||.1;z.value=track.getSettings().zoom||caps.zoom.min;z.disabled=false;$("bulkScanZoomValue").textContent=Number(z.value).toFixed(1)+"×";}
         $("bulkScanTorch").hidden=!caps.torch;
-        navigator.mediaDevices.enumerateDevices().then(devices=>{
-          if(generation!==bulkScanGeneration)return;
-          const select=$("bulkScanCamera"),current=track.getSettings().deviceId;
-          select.replaceChildren(new Option("후면 카메라 자동 선택",""));
-          const cameras=devices.filter(d=>d.kind==="videoinput");
-          cameras.forEach((d,i)=>select.add(new Option(d.label||"카메라 "+(i+1),d.deviceId)));
-          select.closest(".field").hidden=cameras.length<2;
-          if(current)select.value=current;
-        }).catch(()=>{});
         video.srcObject=stream;await video.play();
         if(generation!==bulkScanGeneration)return;
         const reader=new ZXing.MultiFormatReader();bulkScanReader=reader;
@@ -1978,7 +2049,6 @@ nuclear facility.
       target.focus();
     });
     $("bulkScannerRetry").addEventListener("click", startBulkScan);
-    $("bulkScanCamera").addEventListener("change", startBulkScan);
     $("bulkScanZoom").addEventListener("input", async () => {
       const track = bulkScanStream && bulkScanStream.getVideoTracks()[0];
       if (!track) return;
