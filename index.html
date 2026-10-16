@@ -863,7 +863,7 @@
   </dialog>
   <dialog id="ticketPhotosDialog" aria-labelledby="ticketPhotosTitle">
     <div class="modal-head"><h2 id="ticketPhotosTitle">티켓 사진</h2><button id="ticketPhotosCloseBtn" class="ghost" type="button">닫기</button></div>
-    <div class="modal-body"><p class="hint">사진 이름을 누르면 새 창에서 해당 사진을 열람합니다. Drive 접근 권한이 필요할 수 있습니다.</p><div id="ticketPhotosList" style="display:grid;gap:10px;margin-top:16px"></div><p id="ticketPhotosMessage" class="message" role="status"></p><a id="ticketPhotosFolder" class="ghost" target="_blank" rel="noopener" style="display:none">사진 폴더 전체 열기</a></div>
+    <div class="modal-body"><p class="hint">사진 이름을 누르면 이 화면에서 볼 수 있습니다. 별도의 Google 로그인 없이 RT Ticket 로그인으로 열람합니다.</p><div id="ticketPhotosList" style="display:grid;gap:10px;margin-top:16px"></div><figure id="ticketPhotoPreview" style="display:none;margin:16px 0"><img id="ticketPhotoImage" alt="" style="display:block;width:100%;max-height:65vh;object-fit:contain;background:#edf2f7;border-radius:10px"><figcaption id="ticketPhotoCaption" class="hint"></figcaption></figure><p id="ticketPhotosMessage" class="message" role="status"></p><a id="ticketPhotosFolder" class="ghost" target="_blank" rel="noopener" style="display:none">사진 폴더 전체 열기</a></div>
   </dialog>
 
   <dialog id="bulkScannerDialog" aria-labelledby="bulkScannerTitle">
@@ -1783,11 +1783,15 @@ nuclear facility.
       finally {deleteRequestBusy=false;}
     });
     let ticketPhotoRequest = 0;
+    let ticketPhotoPreviewRequest = 0;
+    function clearTicketPhotoPreview(){ticketPhotoPreviewRequest++;$("ticketPhotoImage").removeAttribute("src");$("ticketPhotoPreview").style.display="none";}
+    $("ticketPhotosDialog").addEventListener("close", clearTicketPhotoPreview);
     $("ticketPhotosCloseBtn").addEventListener("click", () => {ticketPhotoRequest++;$("ticketPhotosDialog").close();});
     $("ticketPhotosDialog").addEventListener("cancel", () => ticketPhotoRequest++);
     $("ticketPhotosBtn").addEventListener("click", async () => {
       if (!currentTicket) return;
       const ticketId=currentTicket.ticketId,request=++ticketPhotoRequest;
+      clearTicketPhotoPreview();
       $("ticketPhotosTitle").textContent=ticketId+" 사진";
       $("ticketPhotosList").replaceChildren();$("ticketPhotosFolder").style.display="none";
       $("ticketPhotosMessage").textContent="이 티켓의 사진 목록을 불러오는 중입니다...";
@@ -1796,9 +1800,23 @@ nuclear facility.
         const result=await api("listTicketPhotos",{ticketId});
         if(request!==ticketPhotoRequest||!$("ticketPhotosDialog").open)return;
         for(const photo of result.photos||[]){
-          const url=new URL(photo.url);
-          if(url.protocol!=="https:"||url.hostname!=="drive.google.com")continue;
-          const link=document.createElement("a");link.className="ghost";link.href=url.href;link.target="_blank";link.rel="noopener";link.textContent="사진 열기 · "+photo.name;link.style.justifyContent="flex-start";link.style.overflowWrap="anywhere";$("ticketPhotosList").appendChild(link);
+          const button=document.createElement("button");button.type="button";button.className="ghost";button.textContent="사진 보기 · "+photo.name;button.style.justifyContent="flex-start";button.style.overflowWrap="anywhere";
+          button.addEventListener("click",async()=>{
+            const preview=++ticketPhotoPreviewRequest;
+            $("ticketPhotoPreview").style.display="none";$("ticketPhotoImage").removeAttribute("src");
+            $("ticketPhotosMessage").textContent=photo.name+" 사진을 불러오는 중입니다...";
+            try{
+              if(!photo.id)throw new Error("사진 열람 기능이 포함된 새 Code.gs로 배포해주세요.");
+              const image=await api("getTicketPhoto",{ticketId,fileId:photo.id});
+              if(preview!==ticketPhotoPreviewRequest||request!==ticketPhotoRequest||!$("ticketPhotosDialog").open)return;
+              if(!/^data:image\/(jpeg|png|gif|webp|bmp|avif);base64,[A-Za-z0-9+/=]+$/i.test(image.dataUrl||""))throw new Error("사진 데이터를 읽을 수 없습니다.");
+              const img=$("ticketPhotoImage");img.alt=image.name||photo.name;
+              img.onload=()=>{if(preview===ticketPhotoPreviewRequest)$("ticketPhotosMessage").textContent="사진을 불러왔습니다.";};
+              img.onerror=()=>{if(preview===ticketPhotoPreviewRequest)$("ticketPhotosMessage").textContent="사진을 표시하지 못했습니다. 다른 사진을 선택하거나 다시 시도해주세요.";};
+              img.src=image.dataUrl;$("ticketPhotoCaption").textContent=(image.name||photo.name)+(image.previewOnly?" · 용량 또는 형식에 따라 축소 미리보기로 표시합니다.":"");
+              $("ticketPhotoPreview").style.display="block";$("ticketPhotoPreview").scrollIntoView({block:"nearest",behavior:"smooth"});
+            }catch(err){if(preview===ticketPhotoPreviewRequest&&request===ticketPhotoRequest)$("ticketPhotosMessage").textContent=err.message||"사진을 불러오지 못했습니다.";}
+          });$("ticketPhotosList").appendChild(button);
         }
         const count=$("ticketPhotosList").childElementCount;
         $("ticketPhotosMessage").textContent=count ? (count+"장의 사진이 있습니다."+(result.hasMore?" 나머지는 사진 폴더 전체 열기에서 확인해주세요.":"")) : (result.hasMore?"목록에 사진이 없습니다. 사진 폴더 전체 열기에서 확인해주세요.":"아직 업로드된 사진이 없습니다.");
