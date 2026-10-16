@@ -586,6 +586,19 @@
         z-index: 4;
       }
     }
+    #bulkScannerDialog [hidden]{display:none!important}
+    .bulk-scan-stage{position:relative;background:#071d3a;border-radius:12px;overflow:hidden;height:clamp(200px,36vh,330px)}
+    .bulk-scan-stage video,.bulk-scan-stage canvas{width:100%;height:100%;object-fit:contain;display:block}
+    .bulk-scan-stage canvas[hidden]{display:none}
+    .bulk-scan-guide{position:absolute;left:3%;right:3%;top:26%;height:48%;border:3px solid #42e8ed;border-radius:8px;box-shadow:0 0 0 600px #0005;pointer-events:none}
+    .bulk-scan-guide:before,.bulk-scan-guide:after{content:"";position:absolute;inset:-6px;border:5px solid #fff;border-radius:10px;clip-path:polygon(0 0,14% 0,14% 7%,2% 7%,2% 25%,0 25%,0 0,100% 0,100% 25%,98% 25%,98% 7%,86% 7%,86% 0,100% 0,100% 100%,86% 100%,86% 93%,98% 93%,98% 75%,100% 75%,100% 100%,0 100%,0 75%,2% 75%,2% 93%,14% 93%,14% 100%,0 100%)}
+    .bulk-scan-guide i{position:absolute;left:2%;right:2%;top:50%;height:2px;background:#ff6258;box-shadow:0 0 8px #ff6258}
+    .bulk-scan-guide b{position:absolute;left:0;right:0;bottom:calc(100% + 13px);text-align:center;font-size:13px;color:#fff;text-shadow:0 1px 4px #000}
+    .bulk-scan-guide span{position:absolute;left:1%;right:1%;height:2px;background:#42e8ed;animation:bulkSweep 2.2s ease-in-out infinite}
+    .bulk-scan-stage.recognized .bulk-scan-guide{border-color:#57ef9c}.bulk-scan-stage.recognized .bulk-scan-guide span{display:none}
+    @keyframes bulkSweep{0%,100%{top:8%}50%{top:92%}}
+    @media(orientation:landscape) and (max-height:600px){#bulkScannerDialog{width:min(960px,98vw)}.bulk-scan-stage{height:48vh}}
+    @media(prefers-reduced-motion:reduce){.bulk-scan-guide span{animation:none;top:50%}}
   </style>
 </head>
 
@@ -838,7 +851,17 @@
     <div class="modal-head"><h2 id="bulkScannerTitle">벌크 바코드 스캔</h2><button id="bulkScannerClose" class="ghost" type="button">닫기</button></div>
     <div class="modal-body">
       <p class="hint" style="margin:0 0 12px">바코드 전체가 보이도록 후면 카메라를 비춰주세요. 인식한 번호를 확인한 후 입력합니다.</p>
-      <video id="bulkScannerVideo" autoplay muted playsinline style="display:block;width:100%;height: min(48vh,360px);object-fit:cover;background:#071d3a;border-radius:10px"></video>
+      <div id="bulkScanStage" class="bulk-scan-stage">
+        <video id="bulkScannerVideo" autoplay muted playsinline></video>
+        <canvas id="bulkScanFreeze" hidden></canvas>
+        <div class="bulk-scan-guide"><i></i><b>바코드 양끝을 테두리 안에 맞추세요</b><span></span></div>
+      </div>
+      <p class="hint">긴 바코드는 휴대폰을 가로로 돌리면 더 크게 볼 수 있습니다. 너무 가까이 대지 말고 초점이 선명해질 때까지 거리를 조절하세요.</p>
+      <div class="row" style="margin-top:12px">
+        <div class="field"><label for="bulkScanCamera">카메라 선택</label><select id="bulkScanCamera"><option value="">후면 카메라 자동 선택</option></select></div>
+        <div class="field"><label for="bulkScanZoom">확대 <span id="bulkScanZoomValue">1×</span></label><input id="bulkScanZoom" type="range" min="1" max="1" value="1" step="0.1" disabled></div>
+      </div>
+      <button id="bulkScanTorch" class="ghost" type="button" hidden>조명 켜기</button>
       <p id="bulkScannerStatus" class="message" role="status" aria-live="polite">카메라를 준비하고 있습니다...</p>
       <div class="field"><label for="bulkScannerResult">인식된 벌크라벨</label><input id="bulkScannerResult" readonly placeholder="바코드를 카메라에 비춰주세요"></div>
       <div class="actions"><button id="bulkScannerApply" class="primary" type="button" disabled>이 번호 입력</button><button id="bulkScannerRetry" class="ghost" type="button">다시 스캔</button><button id="bulkScannerManual" class="ghost" type="button">직접 입력하기</button></div>
@@ -1836,65 +1859,106 @@ nuclear facility.
     }
 
 
-    // Camera preview and barcode decoding stay on this device. Only the confirmed
-    // label is added to the existing ticket payload.
     let bulkScanTarget = "bulkLabel";
     let bulkScanGeneration = 0;
     let bulkScanReader = null;
     let bulkScanStream = null;
+    let bulkScanTimer = null;
     function stopBulkScan() {
       bulkScanGeneration++;
-      if (bulkScanReader) { try { bulkScanReader.reset(); } catch (ignore) {} bulkScanReader = null; }
-      if (bulkScanStream) { bulkScanStream.getTracks().forEach(track => track.stop()); bulkScanStream = null; }
-      const video = $("bulkScannerVideo");
-      if (video.srcObject) { video.srcObject.getTracks().forEach(track => track.stop()); video.srcObject = null; }
+      clearTimeout(bulkScanTimer);
+      if (bulkScanReader) {try {bulkScanReader.reset();} catch(ignore) {} bulkScanReader=null;}
+      if (bulkScanStream) {bulkScanStream.getTracks().forEach(track=>track.stop());bulkScanStream=null;}
+      const video=$("bulkScannerVideo");
+      if(video.srcObject){video.srcObject.getTracks().forEach(track=>track.stop());video.srcObject=null;}
     }
-    function closeBulkScanner() {
-      stopBulkScan();
-      if ($("bulkScannerDialog").open) $("bulkScannerDialog").close();
+    function closeBulkScanner(){stopBulkScan();if($("bulkScannerDialog").open)$("bulkScannerDialog").close();}
+    function bulkCameraError(error){
+      const name=error&&error.name||"";
+      if(["NotAllowedError","PermissionDeniedError","SecurityError"].includes(name))return "카메라 권한이 필요합니다. 브라우저 사이트 설정에서 허용하거나 직접 입력해주세요.";
+      if(["NotFoundError","DevicesNotFoundError"].includes(name))return "사용 가능한 카메라가 없습니다. 직접 입력해주세요.";
+      if(["NotReadableError","TrackStartError"].includes(name))return "카메라를 사용할 수 없습니다. 다른 카메라 앱을 닫고 다시 시도해주세요.";
+      return "카메라를 시작하지 못했습니다. 다시 시도하거나 직접 입력해주세요.";
     }
-    function bulkCameraError(error) {
-      const name = error && error.name || "";
-      if (["NotAllowedError", "PermissionDeniedError", "SecurityError"].includes(name)) return "카메라 권한이 필요합니다. 브라우저의 사이트 설정에서 카메라를 허용하거나 직접 입력해주세요.";
-      if (["NotFoundError", "DevicesNotFoundError"].includes(name)) return "사용 가능한 카메라가 없습니다. 벌크라벨을 직접 입력해주세요.";
-      if (["NotReadableError", "TrackStartError"].includes(name)) return "카메라를 사용할 수 없습니다. 다른 카메라 앱을 닫고 다시 시도해주세요.";
-      return "카메라를 시작하지 못했습니다. 다시 시도하거나 벌크라벨을 직접 입력해주세요.";
+    function bulkDecodeHints(){
+      const hints=new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.ITF,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.CODE_93,ZXing.BarcodeFormat.CODABAR,ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+      return hints;
     }
-    async function startBulkScan() {
-      stopBulkScan();
-      const generation = bulkScanGeneration;
-      $("bulkScannerResult").value = "";
-      $("bulkScannerApply").disabled = true;
-      $("bulkScannerStatus").textContent = "카메라 사용을 허용해주세요. 후면 카메라를 준비하고 있습니다...";
-      try {
-        if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          $("bulkScannerStatus").textContent = "카메라는 HTTPS 페이지에서 지원됩니다. 휴대폰의 Safari 또는 Chrome으로 사이트를 열거나 직접 입력해주세요.";
-          return;
-        }
-        const stream = await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}});
-        if (generation !== bulkScanGeneration || !$("bulkScannerDialog").open) { stream.getTracks().forEach(track => track.stop()); return; }
-        bulkScanStream = stream;
-        const hints = new Map();
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39, ZXing.BarcodeFormat.CODE_93, ZXing.BarcodeFormat.CODABAR, ZXing.BarcodeFormat.ITF, ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8, ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E]);
-        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-        const reader = new ZXing.BrowserMultiFormatReader(hints, 250);
-        bulkScanReader = reader;
-        $("bulkScannerStatus").textContent = "바코드를 비춰주세요. 너무 가까이 대지 말고 바코드 전체가 보이도록 맞춰주세요.";
-        await reader.decodeFromStream(stream, $("bulkScannerVideo"), (result) => {
-          if (!result || generation !== bulkScanGeneration || !$("bulkScannerDialog").open) return;
-          const value = String(result.getText() || "").trim();
-          if (!value) return;
-          $("bulkScannerResult").value = value;
-          $("bulkScannerApply").disabled = false;
-          $("bulkScannerStatus").textContent = "인식했습니다. 실제 벌크라벨과 번호가 일치하는지 확인하고 ‘이 번호 입력’을 누르세요.";
-          stopBulkScan();
-        });
-      } catch (error) {
-        if (generation !== bulkScanGeneration) return;
-        stopBulkScan();
-        $("bulkScannerStatus").textContent = bulkCameraError(error);
-      }
+    function decodeBulkCanvas(canvas,reader){
+      const source=new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+      return reader.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(source)),bulkDecodeHints()).getText();
     }
+    function bulkFrameCanvas(video,phase){
+      const w=video.videoWidth,h=video.videoHeight;
+      const crop=phase%3!==2;
+      const sy=crop?Math.floor(h*.25):0,sh=crop?Math.floor(h*.5):h;
+      const scale=Math.min(1,1920/w),padding=30;
+      const base=document.createElement("canvas");base.width=Math.round(w*scale)+padding*2;base.height=Math.round(sh*scale)+padding*2;
+      const ctx=base.getContext("2d",{willReadFrequently:true});ctx.fillStyle="#fff";ctx.fillRect(0,0,base.width,base.height);ctx.imageSmoothingEnabled=false;
+      ctx.drawImage(video,0,sy,w,sh,padding,padding,base.width-padding*2,base.height-padding*2);
+      if(phase%6<3)return base;
+      const rotated=document.createElement("canvas");rotated.width=base.height;rotated.height=base.width;
+      const r=rotated.getContext("2d");r.translate(rotated.width,0);r.rotate(Math.PI/2);r.drawImage(base,0,0);return rotated;
+    }
+    async function startBulkScan(){
+      stopBulkScan();const generation=bulkScanGeneration;
+      const video=$("bulkScannerVideo");$("bulkScanFreeze").hidden=true;video.style.display="block";$("bulkScanStage").classList.remove("recognized");
+      $("bulkScannerResult").value="";$("bulkScannerApply").disabled=true;$("bulkScanTorch").hidden=true;$("bulkScanTorch").dataset.enabled="N";$("bulkScanTorch").textContent="조명 켜기";
+      $("bulkScanZoom").disabled=true;$("bulkScanZoom").closest(".field").hidden=true;$("bulkScanCamera").closest(".field").hidden=true;$("bulkScannerStatus").textContent="카메라 사용을 허용해주세요. 고화질 후면 카메라를 준비하고 있습니다...";
+      try{
+        if(!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$("bulkScannerStatus").textContent="HTTPS 사이트를 Safari 또는 Chrome으로 열거나 직접 입력해주세요.";return;}
+        const deviceId=$("bulkScanCamera").value;
+        const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{...(deviceId?{deviceId:{exact:deviceId}}:{facingMode:{ideal:"environment"}}),width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:24,max:30}}});
+        if(generation!==bulkScanGeneration||!$("bulkScannerDialog").open){stream.getTracks().forEach(track=>track.stop());return;}
+        bulkScanStream=stream;const track=stream.getVideoTracks()[0];const caps=track.getCapabilities?track.getCapabilities():{};
+        if(caps.focusMode&&caps.focusMode.includes("continuous")){try{await track.applyConstraints({advanced:[{focusMode:"continuous"}]});}catch(ignore){}}
+        if(generation!==bulkScanGeneration)return;
+        if(caps.zoom){$("bulkScanZoom").closest(".field").hidden=false;const z=$("bulkScanZoom");z.min=caps.zoom.min;z.max=Math.min(caps.zoom.max,4);z.step=caps.zoom.step||.1;z.value=track.getSettings().zoom||caps.zoom.min;z.disabled=false;$("bulkScanZoomValue").textContent=Number(z.value).toFixed(1)+"×";}
+        $("bulkScanTorch").hidden=!caps.torch;
+        navigator.mediaDevices.enumerateDevices().then(devices=>{
+          if(generation!==bulkScanGeneration)return;
+          const select=$("bulkScanCamera"),current=track.getSettings().deviceId;
+          select.replaceChildren(new Option("후면 카메라 자동 선택",""));
+          const cameras=devices.filter(d=>d.kind==="videoinput");
+          cameras.forEach((d,i)=>select.add(new Option(d.label||"카메라 "+(i+1),d.deviceId)));
+          select.closest(".field").hidden=cameras.length<2;
+          if(current)select.value=current;
+        }).catch(()=>{});
+        video.srcObject=stream;await video.play();
+        if(generation!==bulkScanGeneration)return;
+        const reader=new ZXing.MultiFormatReader();bulkScanReader=reader;
+        let native=null;
+        if(window.BarcodeDetector){try{const supported=await BarcodeDetector.getSupportedFormats();const formats=["code_128","itf","code_39","code_93","codabar","ean_13","ean_8","upc_a","upc_e"].filter(f=>supported.includes(f));if(formats.length)native=new BarcodeDetector({formats});}catch(ignore){}}
+        let phase=0,lastValue="",lastTime=0,hits=0;
+        $("bulkScannerStatus").textContent="테두리 안에 바코드 양끝과 여백을 넣어주세요. 초점이 흐리면 조금 멀리 이동하세요.";
+        const scan=async()=>{
+          if(generation!==bulkScanGeneration||!$("bulkScannerDialog").open)return;
+          let value="";
+          if(video.readyState>=2&&video.videoWidth){
+            const canvas=bulkFrameCanvas(video,phase++);
+            if(native){try{const found=await native.detect(canvas);if(found.length)value=found[0].rawValue;}catch(ignore){native=null;}}
+            if(generation!==bulkScanGeneration)return;
+            if(!value){try{value=decodeBulkCanvas(canvas,reader);}catch(ignore){}}
+            value=String(value||"").trim();
+            if(value){
+              const now=Date.now();hits=value===lastValue&&now-lastTime<1800?hits+1:1;lastValue=value;lastTime=now;
+              $("bulkScannerStatus").textContent="인식 번호 재확인 중입니다. 잠시만 고정해주세요.";
+              if(hits>=2){
+                const freeze=$("bulkScanFreeze");freeze.width=video.videoWidth;freeze.height=video.videoHeight;freeze.getContext("2d").drawImage(video,0,0);freeze.hidden=false;video.style.display="none";
+                $("bulkScanStage").classList.add("recognized");$("bulkScannerResult").value=value;$("bulkScannerApply").disabled=false;
+                $("bulkScannerStatus").textContent="같은 번호를 두 번 확인했습니다. 실제 번호와 비교한 뒤 ‘이 번호 입력’을 누르세요.";
+                stopBulkScan();return;
+              }
+            }
+          }
+          if(generation===bulkScanGeneration)bulkScanTimer=setTimeout(scan,160);
+        };
+        scan();
+      }catch(error){if(generation!==bulkScanGeneration)return;stopBulkScan();$("bulkScannerStatus").textContent=bulkCameraError(error);}
+    }
+
     document.querySelectorAll("[data-bulk-scan]").forEach(button => button.addEventListener("click", () => {
       bulkScanTarget = button.dataset.bulkScan;
       if (!$("bulkScannerDialog").open) $("bulkScannerDialog").showModal();
@@ -1914,6 +1978,19 @@ nuclear facility.
       target.focus();
     });
     $("bulkScannerRetry").addEventListener("click", startBulkScan);
+    $("bulkScanCamera").addEventListener("change", startBulkScan);
+    $("bulkScanZoom").addEventListener("input", async () => {
+      const track = bulkScanStream && bulkScanStream.getVideoTracks()[0];
+      if (!track) return;
+      const zoom = Number($("bulkScanZoom").value);
+      try {await track.applyConstraints({advanced:[{zoom}]}); $("bulkScanZoomValue").textContent = zoom.toFixed(1) + "×";} catch (ignore) {}
+    });
+    $("bulkScanTorch").addEventListener("click", async () => {
+      const track = bulkScanStream && bulkScanStream.getVideoTracks()[0];
+      if (!track) return;
+      const enabled = $("bulkScanTorch").dataset.enabled !== "Y";
+      try {await track.applyConstraints({advanced:[{torch:enabled}]});$("bulkScanTorch").dataset.enabled=enabled?"Y":"N";$("bulkScanTorch").textContent=enabled?"조명 끄기":"조명 켜기";} catch(ignore){$("bulkScannerStatus").textContent="이 카메라에서는 조명을 사용할 수 없습니다.";}
+    });
     $("bulkScannerClose").addEventListener("click", closeBulkScanner);
     $("bulkScannerManual").addEventListener("click", () => {closeBulkScanner(); $(bulkScanTarget).focus();});
     $("bulkScannerDialog").addEventListener("cancel", event => {event.preventDefault(); closeBulkScanner();});
