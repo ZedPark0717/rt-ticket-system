@@ -700,7 +700,9 @@
 
             <div class="field">
               <label for="sku">SKU</label>
-              <textarea id="sku" placeholder="SKU 스캔 및 수기입력 해주세요"></textarea>
+              <textarea id="sku" placeholder="SKU를 직접 입력하거나 카메라로 스캔하세요" autocapitalize="off" spellcheck="false"></textarea>
+              <button class="ghost" type="button" data-bulk-scan="sku">카메라로 SKU 바코드 스캔</button>
+              <p id="skuScanMessage" class="hint" role="status" aria-live="polite"></p>
               <p class="hint">여러 SKU는 줄바꿈, 붙여넣기, 쉼표로 입력해도 자동 정리됩니다.</p>
             </div>
 
@@ -841,7 +843,7 @@
         <div class="field"><label for="editCreatorId">작업자 ID</label><input id="editCreatorId"></div>
       </div>
       <div class="field"><label for="editBulkLabel">벌크라벨</label><textarea id="editBulkLabel" rows="3" autocapitalize="off" spellcheck="false"></textarea><button class="ghost" type="button" data-bulk-scan="editBulkLabel">카메라로 바코드 스캔</button><p id="editBulkScanMessage" class="hint" role="status" aria-live="polite"></p></div>
-      <div class="field"><label for="editSku">SKU</label><textarea id="editSku" rows="3"></textarea><p class="hint">여러 항목은 줄바꿈 또는 쉼표로 구분합니다.</p></div>
+      <div class="field"><label for="editSku">SKU</label><textarea id="editSku" rows="3" autocapitalize="off" spellcheck="false"></textarea><button class="ghost" type="button" data-bulk-scan="editSku">카메라로 SKU 바코드 스캔</button><p id="editSkuScanMessage" class="hint" role="status" aria-live="polite"></p><p class="hint">여러 항목은 줄바꿈 또는 쉼표로 구분합니다.</p></div>
       <div class="field"><label for="editComment">코멘트</label><textarea id="editComment" rows="4"></textarea></div>
       <div id="editTicketError" class="error" role="alert"></div>
       <div class="actions" style="margin-top:16px"><button id="editTicketSaveBtn" class="primary" type="submit">수정 저장</button><button id="editTicketCancelBtn" class="ghost" type="button">취소</button></div>
@@ -2032,6 +2034,9 @@ nuclear facility.
 
     document.querySelectorAll("[data-bulk-scan]").forEach(button => button.addEventListener("click", () => {
       bulkScanTarget = button.dataset.bulkScan;
+      const scanLabel = ["sku", "editSku"].includes(bulkScanTarget) ? "SKU" : "벌크라벨";
+      $("bulkScannerTitle").textContent = scanLabel + " 바코드 스캔";
+      document.querySelector('label[for="bulkScannerResult"]').textContent = "인식된 " + scanLabel;
       if (!$("bulkScannerDialog").open) $("bulkScannerDialog").showModal();
       startBulkScan();
     }));
@@ -2043,8 +2048,10 @@ nuclear facility.
       const duplicate = existing.includes(value);
       if (!duplicate) target.value = target.value.trimEnd() + (target.value.trim() ? "\n" : "") + value;
       target.dispatchEvent(new Event("input", {bubbles:true}));
-      const message = bulkScanTarget === "editBulkLabel" ? $("editBulkScanMessage") : $("bulkScanMessage");
-      message.textContent = duplicate ? "이미 입력된 벌크라벨입니다: " + value : "바코드를 추가했습니다: " + value;
+      const messageIds = {bulkLabel:"bulkScanMessage", editBulkLabel:"editBulkScanMessage", sku:"skuScanMessage", editSku:"editSkuScanMessage"};
+      const message = $(messageIds[bulkScanTarget]);
+      const scanLabel = ["sku", "editSku"].includes(bulkScanTarget) ? "SKU" : "벌크라벨";
+      message.textContent = duplicate ? "이미 입력된 " + scanLabel + "입니다: " + value : scanLabel + " 바코드를 추가했습니다: " + value;
       closeBulkScanner();
       target.focus();
     });
