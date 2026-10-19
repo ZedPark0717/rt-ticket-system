@@ -1124,7 +1124,7 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
       box.querySelectorAll('[data-store-ticket]').forEach(b=>b.addEventListener('click',()=>openTicket(b.dataset.storeTicket)));
     }
     function renderStoreAssignment(t){
-      $("ticketStoreSelect").innerHTML='<option value="">자동 판별 (수동 지정 해제)</option>'+Object.entries(STORE_NAMES).sort((a,b)=>a[1].localeCompare(b[1])).map(([c,n])=>'<option value="'+c+'">'+escapeHtml(c+' · '+n)+'</option>').join('');
+      $("ticketStoreSelect").innerHTML='<option value="">자동 판별 (수동 지정 해제)</option>'+Object.entries(STORE_NAMES).sort((a,b)=>Number(a[0])-Number(b[0])).map(([c,n])=>'<option value="'+c+'">'+escapeHtml(c+' · '+n)+'</option>').join('');
       $("ticketStoreSelect").value=String(t.storeOverride||"");
       $("ticketStoreSave").disabled=t.status==="삭제됨";
       $("ticketStoreMessage").textContent='현재: '+ticketStoreText(t);
