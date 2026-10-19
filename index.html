@@ -822,6 +822,7 @@
 
     <div class="modal-body">
       <div id="detailGrid" class="detail-grid"></div>
+      <section id="detailUploadSection" style="margin-top:20px;padding:16px;border:1px solid #dbe3ec;border-radius:12px"><h3 style="margin:0 0 10px">사진 추가 업로드</h3><p class="hint">사진 업로드를 놓쳤다면 아래 QR코드를 스캔하세요. 현재 휴대폰에서 업로드하려면 ‘사진 업로드’를 누르세요.</p><div id="detailUploadQr" class="success-qr" style="margin:12px auto" aria-label="이 티켓의 사진 업로드 QR코드"></div><p id="detailUploadStatus" class="hint" role="status"></p><button id="detailUploadRetry" class="ghost" type="button" hidden>업로드 QR 다시 불러오기</button></section>
 
       <div class="actions">
         <button id="ticketPhotosBtn" class="primary" type="button">티켓 사진 보기</button>
@@ -1692,6 +1693,39 @@ nuclear facility.
       }
     });
 
+    let detailUploadGeneration=0;
+    function renderDetailUploadQr(url){
+      const box=$("detailUploadQr");box.replaceChildren();
+      $("detailUploadLink").style.display=url?"inline-flex":"none";
+      $("detailUploadLink").href=url||"#";
+      if(!url)return;
+      try{
+        const matrix=new ZXing.QRCodeWriter().encode(url,ZXing.BarcodeFormat.QR_CODE,240,240,new Map());
+        const canvas=document.createElement("canvas");canvas.width=matrix.getWidth();canvas.height=matrix.getHeight();
+        const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#071d3a";
+        for(let y=0;y<matrix.getHeight();y++)for(let x=0;x<matrix.getWidth();x++)if(matrix.get(x,y))ctx.fillRect(x,y,1,1);
+        canvas.setAttribute("role","img");canvas.setAttribute("aria-label","이 티켓의 사진 업로드 QR코드");box.appendChild(canvas);
+        $("detailUploadStatus").textContent="현재 티켓 전용 QR코드입니다. 업로드 후 결과를 확인하세요.";
+      }catch(error){$("detailUploadStatus").textContent="QR코드를 표시하지 못했습니다. ‘사진 업로드’ 링크를 이용해주세요.";}
+    }
+    async function loadDetailUploadQr(ticketId){
+      const generation=++detailUploadGeneration;
+      renderDetailUploadQr("");$("detailUploadRetry").hidden=true;
+      $("detailUploadStatus").textContent="업로드 QR코드를 불러오는 중입니다...";
+      if(currentTicket&&currentTicket.ticketId===ticketId&&currentTicket.uploadUrl){renderDetailUploadQr(currentTicket.uploadUrl);return;}
+      try{
+        const data=await api("getTicket",{ticketId});
+        if(generation!==detailUploadGeneration||!detailDialog.open||!currentTicket||currentTicket.ticketId!==ticketId)return;
+        if(!data.ticket||data.ticket.ticketId!==ticketId||!data.ticket.uploadUrl)throw new Error("사진 업로드 링크가 없습니다.");
+        currentTicket.uploadUrl=data.ticket.uploadUrl;
+        renderDetailUploadQr(data.ticket.uploadUrl);
+      }catch(error){
+        if(generation!==detailUploadGeneration||!detailDialog.open)return;
+        $("detailUploadStatus").textContent=error.message||"업로드 QR코드를 불러오지 못했습니다.";$("detailUploadRetry").hidden=false;
+      }
+    }
+    $("detailUploadRetry").addEventListener("click",()=>{if(currentTicket)loadDetailUploadQr(currentTicket.ticketId);});
+    $("detailDialog").addEventListener("close",()=>{detailUploadGeneration++;renderDetailUploadQr("");});
     function openDetail(ticketId) {
       currentTicket = allTickets.find(ticket => ticket.ticketId === ticketId);
 
@@ -1747,6 +1781,7 @@ nuclear facility.
       $("requestDeleteBtn").disabled = deletionRequested && deletionMailSent;
       $("requestDeleteBtn").textContent = deletionRequested ? (deletionMailSent ? "삭제 요청 완료" : "삭제 요청 메일 재전송") : "삭제 요청";
       if (!detailDialog.open) detailDialog.showModal();
+      loadDetailUploadQr(ticketId);
     }
 
     let deleteRequestTicketId = "";
