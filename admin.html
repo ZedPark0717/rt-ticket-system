@@ -35,7 +35,7 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
 @media(min-width:1024px) and (max-width:1350px){.wrap{padding:28px 24px}.operation-board{grid-template-columns:minmax(0,1fr) 320px;gap:16px}.board-lanes{gap:13px}.board-card{padding:19px 15px}.card-meta{font-size:13px}.card-bulk{font-size:13px}.inspector-fields{grid-template-columns:68px minmax(0,1fr);gap:16px 7px}.inspector-fields dd{font-size:15px}.board-inspector{padding:21px}.lane-total{display:none}.manual-query-controls{width:100%;justify-content:flex-end}.analytics-layout{grid-template-columns:230px minmax(0,1fr)}}
 
 </style>
-</head>
+<style>.card-store{display:block;font-size:14px;line-height:1.5;color:#eccba6;overflow-wrap:anywhere}.store-assignment{margin-top:24px;padding:18px;border:1px solid var(--line);border-radius:12px}.store-assignment select{width:100%;margin:8px 0 12px}.store-note{padding:0 20px 18px;line-height:1.7;font-size:14px}.store-rank-bar{display:block;height:5px;margin-top:7px;border-radius:3px;background:#d59254}.store-row-button{text-align:left;white-space:normal;overflow-wrap:anywhere;border:0;background:transparent;color:inherit;padding:0;cursor:pointer;font:inherit}.store-row-button:hover{text-decoration:underline}#storeAnalyticsPanel{margin-bottom:22px}#storeTicketDetails button{margin:4px}#storeStatsBody td:first-child{min-width:210px}#storeStatsBody td:last-child{min-width:180px}</style><style>#storeStatsBody td{color:#e3ebf0;font-size:16px}#storeAnalyticsPanel th{color:#b7c6d0;font-size:14px}#storeAnalyticsPanel .store-note,.store-assignment .sub{color:#b7c6d0;font-size:15px;line-height:1.7}.store-assignment label,.store-assignment select{font-size:16px}.store-assignment h3,#storeAnalyticsPanel h2{color:#f2f5f7}.store-assignment button{font-size:15px;min-height:42px}</style></head>
 
 <body>
   <div id="loading" class="loading">
@@ -192,6 +192,7 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
               <div class="power-card"><b>Completion</b><strong id="analyticsCompleteRate">0%</strong></div>
             </div>
 
+<section class="table-card" id="storeAnalyticsPanel"><div class="table-head"><h2>매장별 문제 현황</h2><button id="storeCsvBtn" type="button" class="ghost">매장 CSV</button></div><p class="sub store-note">조회한 기간·유형·상태 조건으로 집계합니다. 매장별 티켓은 동일 티켓을 한 번, 문제 벌크는 티켓 안에서 중복 제거한 라벨 수를 셉니다. 여러 매장이 포함된 티켓은 각 매장에 집계됩니다. 라벨이 없으면 벌크 수는 0입니다. 수동 지정 매장이 자동 판별보다 우선합니다. 입고량 대비 불량률이 아닌 접수 건수입니다.</p><div class="table-wrap"><table><thead><tr><th>매장코드 · 매장명</th><th>티켓 수</th><th>문제 벌크 수</th><th>문제 유형 (티켓 수)</th></tr></thead><tbody id="storeStatsBody"></tbody></table></div><p id="storeStatsEmpty" class="empty">전체 조회 또는 기간 조회를 눌러주세요.</p><div id="storeTicketDetails" class="store-note" hidden></div></section>
             <div class="analytics-grid">
               <div class="panel"><h2>일별 접수 추이</h2><div class="chart"><canvas id="dailyChart"></canvas></div></div>
               <div class="panel"><h2>처리 상태 구성</h2><div class="chart"><canvas id="analyticsStatusChart"></canvas></div></div>
@@ -241,7 +242,7 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
         </select>
         <button id="statusUpdateBtn" class="primary" type="button">상태 변경</button>
       </div>
-      <div id="detailGrid" class="detail-grid"></div>
+      <div id="detailGrid" class="detail-grid"></div><section class="store-assignment"><h3>입고 매장 지정</h3><p class="sub">벌크 훼손 등으로 자동 판별이 어려우면 매장을 선택하세요. 수동 지정은 이 티켓 전체에 적용되며 통계에서도 우선합니다. 자동 판별을 선택해 해제할 수 있습니다.</p><label for="ticketStoreSelect">입고 매장</label><select id="ticketStoreSelect"></select><button id="ticketStoreSave" class="primary" type="button">매장 저장</button><p id="ticketStoreMessage" role="status" class="sub"></p></section>
       <div class="modal-actions">
         <a id="photoLink" class="ghost" href="#" target="_blank" rel="noopener">사진</a>
         <button id="deleteBtn" class="danger" type="button">삭제 처리</button>
@@ -251,6 +252,7 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
   </dialog>
 
   <script>
+    const STORE_NAMES = {"1253":"DAE-LOTTE BONGMOO","1254":"SEO-LOTTEWORLD MALL","1291":"SEO-SEOUL LOTTE MALL GIMPO AIRPORT","1375":"GOY-ONE MOUNT","1384":"INC-SQUARE ONE","2055":"SEO-PARNAS","3943":"SEON-BUNDANG","3989":"SEO-KYUNBANG","3993":"DAE-DONSUNGRO","3994":"SEO-NoonSquare","6216":"SUW-SUWON KCC","6411":"CHEO-SHINYOUNG MALL","9011":"KWA-CHUNGJANGRO","9039":"DAEJ-GALLERIA TIMEWORLD","9047":"ULS-LOTTE ULSAN","9115":"SEO-KANGNAM","9148":"SEO-LOTTE SEOUL STATION","9230":"SEO-IFC MALL","9302":"BUS-BUJEONDONG","9303":"CHANG-LOTTE CHANGWON","11634":"HANAM-STARFIELD","11794":"INC-TRIPLE STREET","12211":"GOY-STARFIELD","12925":"YONG-LOTTE MALL SUJI","13631":"SEO-I PARK","13930":"ANS-STARFIELD ANSEONG","14336":"LOTTE","14970":"BUS-LOTTE CENTUM CITY","16417":"SUW-STARFIELD","16694":"BUS-LOTTE DONGBUSAN","16845":"SEO-LOTTE NOWON"};
     const API_URL = "https://script.google.com/macros/s/AKfycbz9ldnPjiNnag7H0W-Yn92_W5hKU0szPUPbO4b-HStas92BOJwLJ17yHQ_ZZuIQnIg/exec";
     const TOKEN_KEY = "rt_admin_auth_token";
     const STATUS_LIST = ["접수","내용 확인 중","고객사 확인 중","완료"];
@@ -631,7 +633,7 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
           <td><button class="ticket-link" type="button" data-ticket="${escapeHtml(t.ticketId)}">${escapeHtml(t.ticketId)}</button></td>
           <td>${escapeHtml(t.date || "")}</td>
           <td>${escapeHtml(t.category || "")}</td>
-          <td>${clip(t.bulkLabel)}</td>
+          <td>${clip(t.bulkLabel)}<div class="sub">${escapeHtml(ticketStoreText(t))}</div></td>
           <td>${clip(t.sku)}</td>
           <td>${escapeHtml(t.creatorId || "")}</td>
           <td>${statusPill(t.status)}</td>
@@ -671,6 +673,7 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
     function renderDetail(t){
       if(!t) return;
       currentTicket = t;
+      renderStoreAssignment(t);
       $("detailTitle").textContent = t.ticketId || "Ticket Detail";
       $("detailStatus").value = STATUS_LIST.includes(t.status) ? t.status : "접수";
 
@@ -682,7 +685,7 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
         <b>Ticket ID</b><div>${escapeHtml(t.ticketId)}</div>
         <b>Date</b><div>${escapeHtml(t.date)}</div>
         <b>Category</b><div>${escapeHtml(t.category)}</div>
-        <b>Bulk Label</b><div>${escapeHtml(t.bulkLabel)}</div>
+        <b>입고 매장</b><div>${escapeHtml(ticketStoreText(t))}</div><b>Bulk Label</b><div>${escapeHtml(t.bulkLabel)}</div>
         <b>SKU</b><div>${escapeHtml(t.sku)}</div>
         <b>작업자</b><div>${escapeHtml(t.creatorId)}</div>
         <b>Status</b><div>${statusPill(t.status)}</div>
@@ -697,13 +700,13 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
       const cached=tickets.find(t=>String(t.ticketId)===String(ticketId));
       if(cached){renderDetail(cached);if(!$("detailDialog").open)$("detailDialog").showModal();}
       const statusButton=$("statusUpdateBtn"),deleteButton=$("deleteBtn");
-      statusButton.disabled=true;deleteButton.disabled=true;
+      statusButton.disabled=true;deleteButton.disabled=true;$("ticketStoreSave").disabled=true;
       try{
         const data=await api("getTicket",{ticketId,readOnly:true});
         if(generation!==adminDetailGeneration||!data.ticket)return;
         if(cached&&!$("detailDialog").open)return;
         renderDetail(data.ticket);if(!$("detailDialog").open)$("detailDialog").showModal();
-        statusButton.disabled=false;deleteButton.disabled=false;
+        statusButton.disabled=false;deleteButton.disabled=false;$("ticketStoreSave").disabled=data.ticket.status==="삭제됨";
       }catch(err){if(generation===adminDetailGeneration){if(cached&&$("detailDialog").open){statusButton.disabled=false;deleteButton.disabled=false;}else alert(err.message||"상세 조회 실패");}}
     }
     $("detailDialog").addEventListener("close",()=>adminDetailGeneration++);
@@ -736,6 +739,7 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
     }
 
     function renderAnalytics(){
+      renderStoreAnalytics();
       const s = countBy(analyticsTickets, t => t.status || "접수");
       const daily = countBy(analyticsTickets, t => String(t.date || "").slice(0,10) || "미분류");
       const skuByCategory = countBy(skuItems, i => i.category || "미분류");
@@ -813,7 +817,7 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
 
     function ticketCsvRows(list){
       return [
-        ["Ticket ID","Date","Category","Bulk Label","SKU","Creator ID","Status","Reminded","Image Folder","Comment"],
+        ["Ticket ID","Date","Category","Bulk Label","SKU","Creator ID","Status","Reminded","Image Folder","Comment","입고 매장","매장 판별"],
         ...list.map(t => [
           t.ticketId,
           t.date,
@@ -824,7 +828,7 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
           t.status,
           t.reminded ? "Y" : "N",
           t.imageUrl || t.image || "",
-          t.comment
+          t.comment, ticketStoreText(t), t.storeOverride ? "수동 지정" : "자동 판별"
         ])
       ];
     }
@@ -1022,7 +1026,7 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
           const requested=t.deletionRequested||String(t.history||"").includes("[삭제요청]");
           const reminder=t.reminded==="Y"||t.reminded===true||String(t.history||"").includes("[리마인드]");
           const sku=String(t.sku||"").split(/[;,\n]/)[0]||"SKU 미입력";
-          return '<button type="button" class="board-card '+(String(t.ticketId)===String(selectedBoardTicketId)?'selected':'')+'" data-board-ticket="'+escapeHtml(t.ticketId)+'" aria-pressed="'+(String(t.ticketId)===String(selectedBoardTicketId))+'"><span class="card-meta"><span>'+escapeHtml(t.ticketId)+'</span><span>↗</span></span><strong>'+escapeHtml(t.category||"카테고리 미입력")+'</strong><span class="card-comment">'+escapeHtml(t.comment||"등록된 코멘트가 없습니다.")+'</span><span class="card-bulk" title="'+escapeHtml(t.bulkLabel||"")+'">'+escapeHtml(t.bulkLabel||"벌크라벨 미입력")+'</span><span class="card-tags"><span>'+escapeHtml(sku)+'</span>'+(reminder?'<span class="request-tag">리마인드</span>':'')+(requested?'<span class="request-tag">삭제 요청</span>':'')+'</span><span class="card-bottom"><span class="card-user"><i>'+escapeHtml(String(t.creatorId||"-").slice(-2))+'</i>'+escapeHtml(t.creatorId||"작업자 미입력")+'</span><span>'+escapeHtml(String(t.date||"").slice(11,16))+'</span></span></button>';
+          return '<button type="button" class="board-card '+(String(t.ticketId)===String(selectedBoardTicketId)?'selected':'')+'" data-board-ticket="'+escapeHtml(t.ticketId)+'" aria-pressed="'+(String(t.ticketId)===String(selectedBoardTicketId))+'"><span class="card-meta"><span>'+escapeHtml(t.ticketId)+'</span><span>↗</span></span><strong>'+escapeHtml(t.category||"카테고리 미입력")+'</strong><span class="card-comment">'+escapeHtml(t.comment||"등록된 코멘트가 없습니다.")+'</span><span class="card-bulk" title="'+escapeHtml(t.bulkLabel||"")+'">'+escapeHtml(t.bulkLabel||"벌크라벨 미입력")+'</span><span class="card-store">'+escapeHtml(ticketStoreText(t))+'</span><span class="card-tags"><span>'+escapeHtml(sku)+'</span>'+(reminder?'<span class="request-tag">리마인드</span>':'')+(requested?'<span class="request-tag">삭제 요청</span>':'')+'</span><span class="card-bottom"><span class="card-user"><i>'+escapeHtml(String(t.creatorId||"-").slice(-2))+'</i>'+escapeHtml(t.creatorId||"작업자 미입력")+'</span><span>'+escapeHtml(String(t.date||"").slice(11,16))+'</span></span></button>';
         }).join(''):'<div class="lane-empty">해당 상태의 티켓이 없습니다.</div>')+'</div></section>';
       }).join('');
       document.querySelectorAll('[data-board-ticket]').forEach(button=>button.addEventListener('click',()=>{selectedBoardTicketId=button.dataset.boardTicket;renderWorkflowBoard();}));
@@ -1030,7 +1034,7 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
       $("boardCountLabel").textContent="현재 조회 조건 · 전체 "+live.length+"건 / 미완료 "+active.length+"건";
       const ticket=live.find(t=>String(t.ticketId)===String(selectedBoardTicketId));
       if(!ticket){$("boardInspector").innerHTML='<div class="lane-empty">티켓을 선택하면<br>상세 내용을 확인할 수 있습니다.</div>';return;}
-      $("boardInspector").innerHTML='<div class="inspector-head"><span>선택한 티켓</span><span>TICKET DETAIL</span></div><span class="inspector-id">'+escapeHtml(ticket.ticketId)+'</span><h2>'+escapeHtml(ticket.category||"미분류")+'</h2><div class="inspector-status">처리 상태'+statusPill(ticket.status)+'</div><button id="boardOpenDetail" class="primary" type="button">상세 · 처리 상태 변경</button><dl class="inspector-fields"><dt>벌크라벨</dt><dd>'+escapeHtml(ticket.bulkLabel||"-")+'</dd><dt>SKU</dt><dd>'+escapeHtml(ticket.sku||"-")+'</dd><dt>작업자</dt><dd>'+escapeHtml(ticket.creatorId||"-")+'</dd><dt>접수일시</dt><dd>'+escapeHtml(ticket.date||"-")+'</dd></dl><div class="inspector-comment"><b>현장 코멘트</b><p>'+escapeHtml(ticket.comment||"등록된 코멘트가 없습니다.")+'</p></div><div class="inspector-actions"><button id="boardPhotosBtn" class="ghost" type="button">티켓 사진 보기　↗</button><button id="boardHistoryBtn" class="ghost" type="button">처리 이력 확인　↗</button></div><div class="inspector-note">상태 변경 및 삭제는 상세 창에서 진행합니다. 카드 선택 시 오른쪽 상세 정보가 바뀝니다.</div>';
+      $("boardInspector").innerHTML='<div class="inspector-head"><span>선택한 티켓</span><span>TICKET DETAIL</span></div><span class="inspector-id">'+escapeHtml(ticket.ticketId)+'</span><h2>'+escapeHtml(ticket.category||"미분류")+'</h2><div class="inspector-status">처리 상태'+statusPill(ticket.status)+'</div><button id="boardOpenDetail" class="primary" type="button">상세 · 처리 상태 변경</button><dl class="inspector-fields"><dt>입고 매장</dt><dd>'+escapeHtml(ticketStoreText(ticket))+'</dd><dt>벌크라벨</dt><dd>'+escapeHtml(ticket.bulkLabel||"-")+'</dd><dt>SKU</dt><dd>'+escapeHtml(ticket.sku||"-")+'</dd><dt>작업자</dt><dd>'+escapeHtml(ticket.creatorId||"-")+'</dd><dt>접수일시</dt><dd>'+escapeHtml(ticket.date||"-")+'</dd></dl><div class="inspector-comment"><b>현장 코멘트</b><p>'+escapeHtml(ticket.comment||"등록된 코멘트가 없습니다.")+'</p></div><div class="inspector-actions"><button id="boardPhotosBtn" class="ghost" type="button">티켓 사진 보기　↗</button><button id="boardHistoryBtn" class="ghost" type="button">처리 이력 확인　↗</button></div><div class="inspector-note">상태 변경 및 삭제는 상세 창에서 진행합니다. 카드 선택 시 오른쪽 상세 정보가 바뀝니다.</div>';
       $("boardOpenDetail").addEventListener("click",()=>openTicket(ticket.ticketId));
       $("boardHistoryBtn").addEventListener("click",()=>openTicket(ticket.ticketId));
       $("boardPhotosBtn").addEventListener("click",()=>openBoardPhotos(ticket.ticketId));
@@ -1084,6 +1088,66 @@ body{font-size:16px;line-height:1.55}.top-inner{padding:21px 32px}.top-title h1{
     }
     const renderBoardWithManualQuery=renderWorkflowBoard;
     renderWorkflowBoard=function(){renderBoardWithManualQuery();if(operationsHasLoaded)$("boardDoneToggle").disabled=false;};
+
+    function storeLabels(value){return [...new Set(String(value||"").split(/[;，,\r\n\t]+/).map(v=>v.trim()).filter(Boolean))];}
+    function storeName(code){return code==="?"?"매장 미지정":(STORE_NAMES[code]||"미등록 매장");}
+    function storeCodeFromLabel(value){const s=String(value||"").trim();return /^20\d{5}\d+$/.test(s)?String(Number(s.slice(2,7))):"?";}
+    function ticketStoreGroups(t){
+      const labels=storeLabels(t.bulkLabel),manual=String(t.storeOverride||"").trim(),groups=new Map();
+      if(manual){groups.set(manual,{code:manual,labels,manual:true});return [...groups.values()];}
+      for(const label of labels){const code=storeCodeFromLabel(label);if(!groups.has(code))groups.set(code,{code,labels:[],manual:false});groups.get(code).labels.push(label);}
+      if(!groups.size)groups.set("?",{code:"?",labels:[],manual:false});
+      return [...groups.values()];
+    }
+    function ticketStoreText(t){return ticketStoreGroups(t).map(s=>(s.code==="?"?"":s.code+" · ")+storeName(s.code)+(s.manual?" (수동 지정)":"")).join(" / ");}
+    function aggregateStoreIssues(list){
+      const map=new Map();
+      for(const t of list){if(t.status==="삭제됨")continue;for(const g of ticketStoreGroups(t)){
+        if(!map.has(g.code))map.set(g.code,{code:g.code,name:storeName(g.code),tickets:new Map(),bulkCount:0,categories:{}});
+        const r=map.get(g.code),key=String(t.ticketId);if(r.tickets.has(key))continue;
+        r.tickets.set(key,t);r.bulkCount+=g.labels.length;const category=t.category||"미분류";r.categories[category]=(r.categories[category]||0)+1;
+      }}
+      return [...map.values()].sort((a,b)=>b.tickets.size-a.tickets.size||b.bulkCount-a.bulkCount||a.code.localeCompare(b.code));
+    }
+    let selectedStoreStatsCode="";
+    function renderStoreAnalytics(){
+      const rows=aggregateStoreIssues(analyticsTickets),max=Math.max(1,...rows.map(r=>r.tickets.size));
+      $("storeStatsEmpty").style.display=rows.length?"none":"block";
+      $("storeStatsEmpty").textContent=analyticsHasLoaded?"조회 조건에 해당하는 티켓이 없습니다.":"전체 조회 또는 기간 조회를 눌러주세요.";
+      $("storeStatsBody").innerHTML=rows.map(r=>'<tr><td><button class="store-row-button" type="button" data-store-stats="'+escapeHtml(r.code)+'">'+escapeHtml((r.code==="?"?"":r.code+" · ")+r.name)+'</button><span class="store-rank-bar" style="width:'+Math.round(r.tickets.size/max*100)+'%"></span></td><td>'+r.tickets.size+'</td><td>'+r.bulkCount+'</td><td>'+escapeHtml(Object.entries(r.categories).sort((a,b)=>b[1]-a[1]).map(([c,n])=>c+' '+n).join(' / '))+'</td></tr>').join('');
+      $("storeStatsBody").querySelectorAll('[data-store-stats]').forEach(b=>b.addEventListener('click',()=>{selectedStoreStatsCode=b.dataset.storeStats;renderStoreTicketDetails(rows);}));
+      renderStoreTicketDetails(rows);
+    }
+    function renderStoreTicketDetails(rows){
+      const r=rows.find(r=>r.code===selectedStoreStatsCode),box=$("storeTicketDetails");box.hidden=!r;if(!r){box.replaceChildren();return;}
+      box.innerHTML='<h3>'+escapeHtml(r.name)+' · 티켓 '+r.tickets.size+'건</h3>'+[...r.tickets.values()].map(t=>'<button type="button" class="ghost" data-store-ticket="'+escapeHtml(t.ticketId)+'">'+escapeHtml(t.ticketId+' · '+(t.category||'미분류'))+'</button>').join('');
+      box.querySelectorAll('[data-store-ticket]').forEach(b=>b.addEventListener('click',()=>openTicket(b.dataset.storeTicket)));
+    }
+    function renderStoreAssignment(t){
+      $("ticketStoreSelect").innerHTML='<option value="">자동 판별 (수동 지정 해제)</option>'+Object.entries(STORE_NAMES).sort((a,b)=>a[1].localeCompare(b[1])).map(([c,n])=>'<option value="'+c+'">'+escapeHtml(c+' · '+n)+'</option>').join('');
+      $("ticketStoreSelect").value=String(t.storeOverride||"");
+      $("ticketStoreSave").disabled=t.status==="삭제됨";
+      $("ticketStoreMessage").textContent='현재: '+ticketStoreText(t);
+    }
+    $("ticketStoreSave").addEventListener('click',async()=>{
+      if(!currentTicket)return;
+      const ticketId=currentTicket.ticketId,previousStoreOverride=String(currentTicket.storeOverride||""),storeCode=$("ticketStoreSelect").value;
+      $("ticketStoreSave").disabled=true;
+      try{
+        await withLoading("매장을 저장 중입니다...",async()=>{
+          const result=await api("updateTicketStore",{ticketId,storeCode,previousStoreOverride});
+          if(!result.ticket)throw new Error("저장 결과를 확인할 수 없습니다. 티켓을 다시 열어주세요.");
+          applyAdminTicketMutation(result.ticket);
+          if(currentTicket&&currentTicket.ticketId===ticketId&&$("detailDialog").open){renderDetail(result.ticket);$("ticketStoreMessage").textContent='저장 완료 · '+ticketStoreText(result.ticket);}
+        });
+      }catch(e){$("ticketStoreMessage").textContent=e.message||"매장 저장 실패";}
+      finally{$("ticketStoreSave").disabled=!currentTicket||currentTicket.status==="삭제됨";}
+    });
+    $("storeCsvBtn").addEventListener('click',()=>{
+      if(!analyticsHasLoaded){alert("먼저 전체 조회 또는 기간 조회를 눌러주세요.");return;}
+      const rows=[["매장코드","매장명","티켓 수","문제 벌크 수","문제 유형 (티켓 수)"],...aggregateStoreIssues(analyticsTickets).map(r=>[r.code==="?"?"":r.code,r.name,r.tickets.size,r.bulkCount,Object.entries(r.categories).map(([c,n])=>c+' '+n).join(' / ')])];
+      downloadText('rt_store_issues_'+todayString()+'.csv',toCsv(rows));
+    });
 
     boot();
   </script>
